@@ -8,7 +8,7 @@ csvreate table user(
 	name varchar(60),
 	email varchar(30)
 	phone varchar(10) 
-	categoy enum('Student', 'Instructor') NOT NULL --to be renamed
+	category enum('Student', 'Instructor') NOT NULL --to be renamed
 	resHall varchar(30) NULL
 	primary key (BNumber)
 );
