@@ -35,6 +35,11 @@ def roster(conn, courseNum):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from enrollment where courseNum = %s''',[courseNum]) #complicated query tbd
     return curs.fetchall()
-    
+
+def getAssignments(conn, courseNum):
+    '''Returns all the assignments from a course'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
+    return curs.fetchall()
 if __name__ == '__main__':
     print('bob')#testing to be done
