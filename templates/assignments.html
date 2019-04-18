@@ -1,0 +1,31 @@
+<html>
+    <head>
+        <title>Assignments</title>
+         <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% extends "courses.html" %}
+        {% block navbar %}
+            {{ super() }}
+        {% endblock %}
+        
+        <div class="assignments">
+            
+        {% for assignment in assignmnets %}
+        {% block tile %}
+        <div class="card">
+            <div class="container">
+                <h4><b>{{assignment.psetTitle}}</b></h4>
+                <p>{{assignment.dueDate}}</p>
+            </div>
+        </div>
+        {% endblock %}
+        {% endfor %}
+        </div>
+            
+        
+    </body>
+    
+</html>

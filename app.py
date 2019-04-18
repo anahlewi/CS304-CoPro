@@ -8,21 +8,22 @@ app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
                            for i in range(20) ])
                            
 # conn = movieDatabase.getConn('c9')
+#url build so that the user comes first then build off ie mhardy2/course/assignments
 
 @app.route("/")
-def index():
-    return render_template("index.html")
+def login():
+    return render_template("login.html")
     
-@app.route("/dashboard/<user>")
-def dashboard(user):
-    return render_template("dashboard.html")
+@app.route("/courses")
+def courses():
+    return render_template("courses.html")
     
-@app.route("/match/<user>")
-def match(user):
-    return render_template("match.html")
+@app.route("/assignments")
+def assignments():
+    return render_template("assignments.html")
 
-@app.route("/profile/<user>")
-def profile(user):
+@app.route("/profile")
+def profile():
     return render_template("profile.html")
     
 if __name__ == '__main__':
