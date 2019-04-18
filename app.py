@@ -19,6 +19,6 @@ def dashboard(user):
     return render_template("dashboard.html")
     
 @app.route("/match/<user>")
-def dashboard(user):
+def match(user):
     return render_template("match.html")
     
