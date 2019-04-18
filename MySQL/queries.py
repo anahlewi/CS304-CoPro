@@ -11,20 +11,30 @@ def getConn(db):
     conn.autocommit(True)
     return conn
     
-def profile(conn, user):
+def profile(conn, username):
     '''Returns the information to populate the profile page'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where user=%s''',[user])
+    curs.execute('''select * from users where username=%s''',[username])
     return curs.fetchone()
     
+def getBnumber(conn, username):
+    '''Returns the student's bnumber'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select bnumber from users where username = %s''',[username])
+    return curs.fetchone()
+
 def dashboard(conn, bnumber):
     '''Returns the information to populate the student's dashboard page'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users inner join enrollment using (%s) inner join courses using (%s)''',[bnumber, bnumber])
+    curs.execute('''select courseNum, courseName, semester from enrollment inner
+    join courses using (courseNum) where bnumber = %s''',[bnumber])
     return curs.fetchall()
     
 def roster(conn, courseNum):
     '''Returns all the students enrolled in a courses'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from enrollment ''') #complicated query tbd
+    curs.execute('''select * from enrollment where courseNum = %s''',[courseNum]) #complicated query tbd
     return curs.fetchall()
+    
+if __name__ == '__main__':
+    print('bob')#testing to be done
