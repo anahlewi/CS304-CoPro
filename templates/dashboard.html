@@ -1,0 +1,20 @@
+<html>
+    <head>
+        <title></title>
+         <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% block navbar %}
+        <ul>
+            <li><a class= "{% block nav_select%}active{%endblock%}" href="">Profile</a></li>
+            <li><a class= "{% block nav_insert%}{%endblock%}"  href="">Dashboard</a></li>
+            <li><a class= "{% block nav_search%}{%endblock%}" href="">Courses</a></li>
+            <li><a class= "{% block nav_avail%}{%endblock%}" href="">Availability</a></li>
+        </ul>
+        {% endblock %}
+        
+    </body>
+    
+</html>
