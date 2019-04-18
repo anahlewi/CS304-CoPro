@@ -29,6 +29,7 @@ create table courses(
 	psetNum int auto_increment,
 	psetTitle varchar(30)
 	maxSize  int,
+	dueDate date
 	foreign key(instructor) references users(name) on delete cascade on update cascade,
 	primary key (courseNum)
 );
