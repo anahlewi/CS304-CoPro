@@ -6,17 +6,21 @@
           href="{{ url_for('static', filename = 'style.css') }}">
     </head>
     <body>
+        <!-- Extends the navbar from courses -->
         {% extends "courses.html" %}
         {% block navbar %}
             {{ super() }}
         {% endblock %}
         
-        
+        <!-- Display info about the user
+            NEED to implement a way to do this differently for professor vs student-->
         <p>Name: {{user.name}}</p>
         <p>email: {{user.email}}</p>
         <p>Phone: {{user.phone}}</p>
-        <p>Residence: {{user.resHall}}</p>
-        <p>Availability: {{user.availability}}</p>
+        {% if user.userType == 'Student' %}
+            <p>Residence: {{user.resHall}}</p>
+            <p>Availability: {{user.availability}}</p>
+        {% endif %}
         
         <button>Edit Profile Details</button>
         <!--Here when button clicked show form for editing details -->
