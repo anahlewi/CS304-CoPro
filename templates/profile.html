@@ -6,38 +6,36 @@
           href="{{ url_for('static', filename = 'style.css') }}">
     </head>
     <body>
-        <!-- Extends the navbar from courses -->
-        {% extends "courses.html" %}
-        {% block navbar %}
-            {{ super() }}
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="profile content">
+            <!-- Display info about the user show reshall and avail if student -->
+            <p>Name: {{user.name}}</p>
+            <p>email: {{user.email}}</p>
+            <p>Phone: {{user.phone}}</p>
+            {% if user.userType == 'Student' %}
+                <p>Residence: {{user.resHall}}</p>
+                <p>Availability: {{user.availability}}</p>
+            {% endif %}
+        
+            <button>Edit Profile Details</button>
+            <!--Here when button clicked show form for editing details -->
+            <form method="POST" action="">
+                <p><label for="edit-name">Name:</label>
+                <input type="text" id="new-name" name="name"></p>
+                <p><label for="edit-email">Email:</label>
+                <input type="text" id="new-email" name="email"></p>
+                <p><label for="edit-phone">Phone Number:</label>
+                <input type="text" id="new-phone" name="phone"></p>
+                <p><label for="edit-residence">Residence:</label>
+                <input type="text" id="new-residence" name="residence"></p>
+                <p><label for="edit-avail">Availability:</label>
+                <input type="text" id="new-avail" name="avail"></p>
+                <p><input type="submit" value="Submit Changes"></p>
+            </form>
+        </div>
         {% endblock %}
-        
-        <!-- Display info about the user
-            NEED to implement a way to do this differently for professor vs student-->
-        <p>Name: {{user.name}}</p>
-        <p>email: {{user.email}}</p>
-        <p>Phone: {{user.phone}}</p>
-        {% if user.userType == 'Student' %}
-            <p>Residence: {{user.resHall}}</p>
-            <p>Availability: {{user.availability}}</p>
-        {% endif %}
-        
-        <button>Edit Profile Details</button>
-        <!--Here when button clicked show form for editing details -->
-        <form method="POST" action="">
-            <p><label for="edit-name">Name:</label>
-            <input type="text" id="new-name" name="name"></p>
-            <p><label for="edit-email">Email:</label>
-            <input type="text" id="new-email" name="email"></p>
-            <p><label for="edit-phone">Phone Number:</label>
-            <input type="text" id="new-phone" name="phone"></p>
-            <p><label for="edit-residence">Residence:</label>
-            <input type="text" id="new-residence" name="residence"></p>
-            <p><label for="edit-avail">Availability:</label>
-            <input type="text" id="new-avail" name="avail"></p>
-            <p><input type="submit" value="POST"></p>
-        </form>
-        
+   
     </body>
     
 </html>
