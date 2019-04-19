@@ -11,6 +11,29 @@
             {{ super() }}
         {% endblock %}
         
+        
+        <p>Name: {{user.name}}</p>
+        <p>email: {{user.email}}</p>
+        <p>Phone: {{user.phone}}</p>
+        <p>Residence: {{user.resHall}}</p>
+        <p>Availability: {{user.availability}}</p>
+        
+        <button>Edit Profile Details</button>
+        <!--Here when button clicked show form for editing details -->
+        <form method="POST" action="">
+            <p><label for="edit-name">Name:</label>
+            <input type="text" id="new-name" name="name"></p>
+            <p><label for="edit-email">Email:</label>
+            <input type="text" id="new-email" name="email"></p>
+            <p><label for="edit-phone">Phone Number:</label>
+            <input type="text" id="new-phone" name="phone"></p>
+            <p><label for="edit-residence">Residence:</label>
+            <input type="text" id="new-residence" name="residence"></p>
+            <p><label for="edit-avail">Availability:</label>
+            <input type="text" id="new-avail" name="avail"></p>
+            <p><input type="submit" value="POST"></p>
+        </form>
+        
     </body>
     
 </html>
