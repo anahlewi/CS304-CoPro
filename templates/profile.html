@@ -1,0 +1,54 @@
+<html>
+    <head>
+        <title>Profile</title>
+        <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+        <script type="{{ url_for('static', filename = 'app-js.js') }}"></script>
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="profile content">
+            <!-- Display info about the user show reshall and avail if student -->
+            <p>Name: {{user.name}}</p>
+            <p>email: {{user.email}}</p>
+            
+        
+            <button onclick="showEditForm()">Edit Profile Details</button>
+            <!--Here when button clicked show form for editing details -->
+            <form id="editForm" method="POST" action="">
+                <p><label for="edit-name">Name:</label>
+                <input type="text" id="new-name" name="name" value="{{name}}"></p>
+                <p><label for="edit-email">Email:</label>
+                <input type="text" id="new-email" name="email" value ="{{email}}" ></p>
+                <p><label for="edit-phone">Phone Number:</label>
+                <input type="text" id="new-phone" name="phone"></p>
+                <p><label for="edit-residence">Residence:</label>
+                <input type="text" id="new-residence" name="residence"></p>
+                <p><label for="edit-avail">Availability:</label>
+                <input type="text" id="new-avail" name="avail"></p>
+                <p><input type="submit" value="Submit Changes"></p>
+            </form>
+        </div>
+        {% endblock %}
+        
+        {% block script %}
+        <script>
+        /* global $ */
+            $("#editForm").on('click', function showEditForm() {
+            var x = document.getElementById("editForm");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } 
+            else {
+                x.style.display = "none";
+            }
+            });
+        </script>
+        
+        {% endblock %}
+   
+    </body>
+    
+</html>

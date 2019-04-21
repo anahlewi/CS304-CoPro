@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <title>Profile</title>
+        <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+        <script type="{{ url_for('static', filename = 'app-js.js') }}"></script>
+    </head>
+    {% extends "base.html" %}
+    <body>
+        {% block content %}
+            <div class="profile content">
+            <h1>Add Info</h1>
+            <form id="newUser" method="POST" action="">
+                <p><label for="add-name">Name:</label>
+                <input type="text" id="add-name" name="name" value ="{{name}}"></p>
+                <p><label for="add-email">Email:</label>
+                <input type="text" id="add-email" name="email" value="{{email}}"></p>
+                <p><label for="add-email">Phone Number:</label>
+                <input type="text" id="add-phone" name="phone"></p>
+                <p><label for="add-bnumber">BNumber:</label>
+                <input type="text" id="add-bnumber" name="bnumber"></p>
+                <p><input type="submit" value="Submit Changes"></p>
+            </form>
+            </div>
+        {% endblock %}
+    </body>
+</html>

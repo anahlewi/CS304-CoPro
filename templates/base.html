@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>{% block title %} Base {% endblock %}</title>
+    </head>
+    <body>
+        <ul class= "navbar">
+            <li class="nav_li"><a class= "" href="/profile">Profile</a></li>
+            <li class="nav_li"><a class= ""  href="/courses">Courses</a></li>
+            <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
+        </ul>
+        {% block content %}
+        {% endblock %}
+    </body>
+</html>
