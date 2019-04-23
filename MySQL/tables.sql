@@ -19,7 +19,7 @@ drop table if exists enrollment;
 -- Defining Tables
 create table if not exists users(
 	username varchar(30),
-	bnumber varchar(9)
+	bnumber varchar(9) NOT NULL,
 	name varchar(60),
 	email varchar(30),
 	phone varchar(10),
@@ -56,6 +56,7 @@ create table if not exists groups(
 	primary key (groupNum, bnumber))
 	ENGINE	= InnoDB;
 
+
 create table if not exists groupForPset(
 	groupNum int,
 	psetNum int,
@@ -63,7 +64,7 @@ create table if not exists groupForPset(
 	foreign key (psetNum) references courses(psetNum) on delete cascade on update cascade,
 	primary key (groupNum, psetNum))
 	ENGINE	= InnoDB;
-
+	
 create table if not exists enrollment(
 	BNumber int references users(bnumber) on delete cascade on update cascade,
 	courseNum int references courses(courseNum) on delete cascade on update cascade,

@@ -11,11 +11,18 @@ def getConn(db):
     conn.autocommit(True)
     return conn
     
-def profile(conn, username):
+def profile(conn, name):
     '''Returns the information to populate the profile page'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where username=%s''',[username])
+    curs.execute('''select * from users where name like %s''',[name])
     return curs.fetchone()
+
+def addUser(conn, bnumber, name, email, phone):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into users(bnumber, name, email, phone) 
+                         values (%s, %s, %s, %s)''',[bnumber, name, email, phone])
+    
+    
     
 def getBnumber(conn, username):
     '''Returns the student's bnumber'''
@@ -43,4 +50,5 @@ def getAssignments(conn, courseNum):
     return curs.fetchall()
     
 if __name__ == '__main__':
-    print('bob')#testing to be done
+    conn = getConn('c9')
+    print(profile(conn, "Anah Lewi"))

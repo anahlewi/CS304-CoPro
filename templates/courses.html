@@ -1,36 +1,28 @@
 <html>
     <head>
-        <title>Courses</title>
+        <title>{% block title %} Courses {% endblock %}</title>
         <meta charset="utf-8">
         <link type="text/css"
           rel="stylesheet"
           href="{{ url_for('static', filename = 'style.css') }}">
     </head>
     <body>
-        {% block navbar %}
-        <ul class= "navbar">
-            <li class="nav_li"><a class= "" href="/profile">Profile</a></li>
-            <li class="nav_li"><a class= "active"  href="/courses">Courses</a></li>
-            <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
-        </ul>
-        {% endblock %}
-        
-        <div class="courses">
-            
-        {% for course in courses %}
-        {% block tile %}
-        <div class="card {{course.courseName}}">
-            <div class="container">
-                <h4><b>{{course.courseName}}</b></h4>
-                <p>{{course.instructor}}</p>
-                <p>{{course.semester}}</p> 
-            </div>
-        </div>
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="courses content">
+            {% for course in courses %}
+                {% block tile %}
+                <div class="card {{course.courseName}}">
+                    <div class="container">
+                        <h4><b>{{course.courseName}}</b></h4>
+                        <p>{{course.instructor}}</p>
+                        <p>{{course.semester}}</p> 
+                    </div>
+                </div>
         {% endblock %}
         {% endfor %}
         </div>
-            
-        
+        {% endblock %}
     </body>
     
 </html>
