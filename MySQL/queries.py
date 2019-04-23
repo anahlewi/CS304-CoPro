@@ -41,5 +41,6 @@ def getAssignments(conn, courseNum):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
     return curs.fetchall()
+    
 if __name__ == '__main__':
     print('bob')#testing to be done
