@@ -32,7 +32,7 @@ create table if not exists users(
 	'Thursday Night 7-11', 'Friday Morning 8-12', 'Friday Afternoon 12-5', 
 	'Friday Night 7-11', 'Saturday Morning 8-12', 'Saturday Afternoon 12-5', 
 	'Saturday Night 7-11', 'Sunday Morning 8-12', 'Sunday Afternoon 12-5', 
-	'Sunday Night 7-11',),
+	'Sunday Night 7-11') NULL,
 	primary key (bnumber))
 	ENGINE = InnoDB;
 
@@ -42,7 +42,7 @@ create table if not exists courses(
 	instructor varchar(60),
 	semester varchar(7), 
 	psetNum int auto_increment,
-	psetTitle varchar(30)
+	psetTitle varchar(30),
 	maxSize  int,
 	dueDate date,
 	foreign key(instructor) references users(name) on delete restrict on update cascade,
@@ -50,10 +50,10 @@ create table if not exists courses(
 	ENGINE	= InnoDB;
 
 create table if not exists groups(
-	groupNum int auto_increment,
+	groupNum int auto_increment NOT NULL,
 	bnumber int,
 	foreign key (bnumber) references users(bnumber) on delete set null on update cascade,
-	primary key (groupNum, bnumber))
+	primary key (groupNum))
 	ENGINE	= InnoDB;
 
 
