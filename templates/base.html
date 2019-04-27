@@ -3,14 +3,30 @@
     <head>
         <meta charset="utf-8"/>
         <title>{% block title %} Base {% endblock %}</title>
+        <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
     </head>
     <body>
+        {%block navabar%}
         <ul class= "navbar">
+            <li class="nav_li"><a class= "" href="/home">Home</a></li>
             <li class="nav_li"><a class= "" href="/profile">Profile</a></li>
             <li class="nav_li"><a class= ""  href="/courses">Courses</a></li>
             <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
         </ul>
-        {% block content %}
-        {% endblock %}
+        {%endblock%}
+        <div class="content">
+            {% block content %}
+             
+             
+             <a href="{{ url_for('login')}}">Login</a>
+             
+           
+            {% endblock %}
+             </div>
+       
     </body>
+{% block script %}
+{%endblock%}
 </html>

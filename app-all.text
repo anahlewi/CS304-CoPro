@@ -1,0 +1,458 @@
+import json
+import queries 
+from flask import (Flask, url_for, redirect, session, render_template, request, flash)
+import random, math
+from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
+from flask_googlelogin import GoogleLogin
+
+app = Flask(__name__)
+
+
+app.config.update(
+    SECRET_KEY='AIzaSyBbtqYZB9aGi4sPmzbKKJvpV2EpcwDY47g',
+    GOOGLE_LOGIN_CLIENT_ID='137996221652-06lt05ueh81jt9rtse06idsdgggmoda5.apps.googleusercontent.com',
+    GOOGLE_LOGIN_CLIENT_SECRET='lWDlIeZukzElBCdrnhidGoNR',
+    GOOGLE_LOGIN_REDIRECT_URI='http://mysql-workshop-alewi.c9users.io:8081/oauth2callback',
+    GOOGLE_LOGIN_SCOPES='https://www.googleapis.com/auth/userinfo.email')
+
+googlelogin = GoogleLogin(app)
+
+users = {}
+                         
+#url build so that the user comes first then build off ie mhardy2/course/assignments
+
+#user class for each user session 
+class User(UserMixin):
+    def __init__(self, userinfo):
+        self.id = userinfo['id']
+        self.name = userinfo['name']
+        self.picture = userinfo.get('picture')
+        self.email = userinfo.get('email')
+
+
+@googlelogin.user_loader
+def get_user(userid):
+    return users.get(userid)
+#connects to google auth -- third party login 
+@app.route('/oauth2callback')
+@googlelogin.oauth2callback
+def login(token, userinfo, **params):
+    user = users[userinfo['id']] = User(userinfo)
+    login_user(user)
+    #uses google token and extra info in session 
+    session['token'] = json.dumps(token)
+    session['extra'] = params.get('extra')
+    conn = queries.getConn('c9')
+    search = queries.profile(conn, user.name)
+    if search:
+        return redirect(params.get('next', url_for('profile')))
+    else:
+        return redirect(params.get('next', url_for('newUser')))
+
+#allows user to logout for testing purpose --> more sophisticated login will be created    
+@app.route('/logout')
+def logout():
+    logout_user()
+    session.clear()
+    return """
+        <p>Logged out</p>
+        <p><a href="/">Return to /</a></p>
+        """
+
+@app.route('/')
+def index():
+    return 'Hello world'
+
+#profile page can only be accessed once you have logged in 
+@app.route('/profile')
+@login_required
+def profile():
+    conn = queries.getConn('c9')
+    userInfo = queries.profile(conn, current_user.name)
+    return render_template('profile.html', user=userInfo)
+
+#will be redirected to this url when your name is not in database
+@app.route('/newUser', methods = ['GET','POST'])
+@login_required
+def newUser():
+    conn = queries.getConn('c9')
+    if request.method == 'POST':
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        bnumber = request.form.get('bnumber')
+        if len(bnumber) == 0:
+            flash('enter a bnumber')
+        else:
+            queries.addUser(conn, bnumber, name, email, phone)
+            return redirect(url_for('profile', name))
+        
+    else:
+        name = current_user.name 
+        email = current_user.email 
+        return render_template('newUser.html', name = name, email = email)
+
+
+@app.route('/home')
+@login_required
+def home():
+    return """
+        <p>Hello, %s</p>
+        <p><img src="%s" width="100" height="100"></p>
+        <p><a href="/logout">Logout</a></p>
+        """ % (current_user.name, current_user.picture)
+
+
+@app.route('/api/addexpense')
+@login_required
+def api_addexpense():
+    req = request.get_json()
+    return req
+
+    
+@app.route('/courses')
+@login_required
+def courses():
+    return render_template('courses.html')
+    
+@app.route('/assignments')
+@login_required
+def assignments():
+    return render_template('assignments.html')
+
+
+if __name__ == '__main__':
+    app.debug = True
+    app.run('0.0.0.0',8081)
+from __future__ import print_function
+import sys
+import MySQLdb
+
+def getConn(db):
+    '''Connects to a MySQL database using the host information'''
+    conn = MySQLdb.connect(host='localhost',
+                           user='ubuntu',
+                           passwd='',
+                           db=db)
+    conn.autocommit(True)
+    return conn
+    
+def profile(conn, name):
+    '''Returns the information to populate the profile page'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from users where name like %s''',[name])
+    return curs.fetchone()
+
+def addUser(conn, bnumber, name, email, phone):
+    '''Adds new user to database'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into users(bnumber, name, email, phone) 
+                         values (%s, %s, %s, %s)''',[bnumber, name, email, phone])
+    
+def getBnumber(conn, username):
+    '''Returns the student's bnumber'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select bnumber from users where username = %s''',[username])
+    return curs.fetchone()
+
+def dashboard(conn, bnumber):
+    '''Returns the information to populate the student's dashboard page'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select courseNum, courseName, semester from enrollment inner
+    join courses using (courseNum) where bnumber = %s''',[bnumber])
+    return curs.fetchall()
+    
+def roster(conn, courseNum):
+    '''Returns all the students enrolled in a courses'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from enrollment where courseNum = %s''',[courseNum]) #complicated query tbd
+    return curs.fetchall()
+
+def getAssignments(conn, courseNum):
+    '''Returns all the assignments from a course'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
+    return curs.fetchall()
+if __name__ == '__main__':
+    conn = getConn('c9')
+    print(profile(conn, "Anah Lewi"))use c9;
+
+drop table if exists users;
+create table users(
+	username varchar(30),
+	bnumber varchar(9) NOT NULL,
+	name varchar(60),
+	email varchar(30),
+	phone varchar(10),
+	userType enum('Student', 'Instructor') NOT NULL, 
+	resHall varchar(30) NULL,
+	availability set('Monday Morning 8-12', 'Monday Afternoon 12-5', 
+	'Monday Night 7-11', 'Tuesday Morning 8-12', 'Tuesday Afternoon 12-5', 
+	'Tuesday Night 7-11', 'Wednesday Morning 8-12', 'Wednesday Afternoon 12-5', 
+	'Wednesday Night 7-11', 'Thursday Morning 8-12', 'Thursday Afternoon 12-5', 
+	'Thursday Night 7-11', 'Friday Morning 8-12', 'Friday Afternoon 12-5', 
+	'Friday Night 7-11', 'Saturday Morning 8-12', 'Saturday Afternoon 12-5', 
+	'Saturday Night 7-11', 'Sunday Morning 8-12', 'Sunday Afternoon 12-5', 
+	'Sunday Night 7-11'), 
+	primary key (bnumber)
+)ENGINE = InnoDB;
+
+drop table if exists courses;
+create table courses(
+	courseNum int,
+	courseName varchar(60),
+	instructor varchar(60),
+	semester varchar(7), 
+	psetNum int NOT NULL,
+	psetTitle varchar(30),
+	maxSize int,
+	dueDate date,
+	-- foreign key(instructor) references users(name) on delete cascade on update cascade,
+	primary key (courseNum)
+)ENGINE = InnoDB;
+
+drop table if exists groups;
+create table groups(
+	groupNum int auto_increment,
+	bnumber int NOT NULL,
+	-- foreign key (bnumber) references users(bnumber) on delete cascade on update cascade,
+	primary key (groupNum)
+)ENGINE = InnoDB;
+
+drop table if exists groupByPset;
+create table groupForPset(
+	groupNum int,
+	psetNum int,
+	-- foreign key (groupNum) references groups(groupNum) on delete cascade on update cascade,
+	-- foreign key (psetNum) references courses(psetNum) on delete cascade on update cascade,
+	primary key (groupNum, psetNum)
+)ENGINE = InnoDB;
+
+drop table if exists enrollment;
+create table enrollment(
+	BNumber int references users(bnumber) on delete cascade on update cascade,
+	courseNum int references courses(courseNum) on delete cascade on update cascade,
+	primary key (bnumber, courseNum)
+)ENGINE = InnoDB;
+<html>
+    <head>
+        <title>{% block title %} Assignments {% endblock %}</title>
+         <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="assignments content">
+            {% for assignment in assignmnets %}
+            {% block tile %}
+            <div class="card">
+                <div class="container">
+                    <h4><b>{{assignment.psetTitle}}</b></h4>
+                    <p>{{assignment.dueDate}}</p>
+                </div>
+            </div>
+            {% endblock %}
+            {% endfor %}
+        </div>
+        {% endblock %}
+    </body>
+    
+</html><!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8"/>
+        <title>{% block title %} Base {% endblock %}</title>
+    </head>
+    <body>
+        <ul class= "navbar">
+            <li class="nav_li"><a class= "" href="/profile">Profile</a></li>
+            <li class="nav_li"><a class= ""  href="/courses">Courses</a></li>
+            <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
+        </ul>
+        {% block content %}
+        {% endblock %}
+    </body>
+</html><html>
+    <head>
+        <title>{% block title %} Courses {% endblock %}</title>
+        <meta charset="utf-8">
+        <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="courses content">
+                {% block tile %}
+                <div class="card">
+                    <div class="container">
+                        <h4><b>example</b></h4>
+                        <p>example</p>
+                        <p>example</p> 
+                    </div>
+                </div>
+        {% endblock %}
+        </div>
+        {% endblock %}
+    </body>
+    
+</html><html>
+    <head>
+        <title>{% block title %} Login {% endblock %}</title>
+         <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="login content">
+            <p>Login Wahoo</p>
+        </div>
+        {% endblock %}
+        
+            
+        
+    </body>
+    
+</html><html>
+    <head>
+        <title>Profile</title>
+        <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+        <script type="{{ url_for('static', filename = 'app-js.js') }}"></script>
+    </head>
+    {% extends "base.html" %}
+    <body>
+        {% block content %}
+            <div class="profile content">
+            <h1>Add Info</h1>
+            <form id="newUser" method="POST" action="">
+                <p><label for="add-name">Name:</label>
+                <input type="text" id="add-name" name="name" value ="{{name}}"></p>
+                <p><label for="add-email">Email:</label>
+                <input type="text" id="add-email" name="email" value="{{email}}"></p>
+                <p><label for="add-email">Phone Number:</label>
+                <input type="text" id="add-phone" name="phone"></p>
+                <p><label for="add-bnumber">BNumber:</label>
+                <input type="text" id="add-bnumber" name="bnumber"></p>
+                <p><input type="submit" value="Submit Changes"></p>
+            </form>
+            </div>
+        {% endblock %}
+    </body>
+</html><html>
+    <head>
+        <title>Profile</title>
+        <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+        <script type="{{ url_for('static', filename = 'app-js.js') }}"></script>
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        <div class="profile content">
+            <!-- Display info about the user show reshall and avail if student -->
+            <p>Name: {{user.name}}</p>
+            <p>email: {{user.email}}</p>
+            
+        
+            <button onclick="showEditForm()">Edit Profile Details</button>
+            <!--Here when button clicked show form for editing details -->
+            <form id="editForm" method="POST" action="">
+                <p><label for="edit-name">Name:</label>
+                <input type="text" id="new-name" name="name" value="{{name}}"></p>
+                <p><label for="edit-email">Email:</label>
+                <input type="text" id="new-email" name="email" value ="{{email}}" ></p>
+                <p><label for="edit-phone">Phone Number:</label>
+                <input type="text" id="new-phone" name="phone"></p>
+                <p><label for="edit-residence">Residence:</label>
+                <input type="text" id="new-residence" name="residence"></p>
+                <p><label for="edit-avail">Availability:</label>
+                <input type="text" id="new-avail" name="avail"></p>
+                <p><input type="submit" value="Submit Changes"></p>
+            </form>
+        </div>
+        {% endblock %}
+        
+        {% block script %}
+        <script>
+        /* global $ */
+            $("#editForm").on('click', function showEditForm() {
+            var x = document.getElementById("editForm");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+            } 
+            else {
+                x.style.display = "none";
+            }
+            });
+        </script>
+        
+        {% endblock %}
+   
+    </body>
+    
+</html>
+body {
+  margin: 0;
+  background-color: white;
+  color:#368F8B;
+  font-family: sans-serif;
+
+}
+
+.navbar {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  width: 15%;
+  background-color: #adb2ba;
+  position: fixed;
+  height: 100%;
+  overflow: auto;
+  font-size: 16px;
+}
+
+.nav_li a {
+  display: block;
+  color: #160F29;
+  padding: 8px 16px;
+  text-decoration: none;
+}
+
+.nav_li a.active {
+  background-color:#368F8B;
+  color: white;
+}
+
+.nav_li a:hover:not(.active) {
+  background-color: #555;
+  color: white;
+}
+
+.content {
+  margin-left: 15%;
+}
+
+.card {
+  /* Add shadows to create the "card" effect */
+  width: 10%;
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  transition: 0.3s;
+}
+
+/* On mouse-over, add a deeper shadow */
+.card:hover {
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+/* Add some padding inside the card container */
+.container {
+  padding: 2px 16px;
+}

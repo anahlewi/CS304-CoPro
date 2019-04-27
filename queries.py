@@ -11,18 +11,17 @@ def getConn(db):
     conn.autocommit(True)
     return conn
     
-def profile(conn, name):
+def profile(conn, email):
     '''Returns the information to populate the profile page'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where name like %s''',[name])
+    curs.execute('''select * from users where email like %s''',[email])
     return curs.fetchone()
 
 def addUser(conn, bnumber, name, email, phone):
+    '''Adds new user to database'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''insert into users(bnumber, name, email, phone) 
                          values (%s, %s, %s, %s)''',[bnumber, name, email, phone])
-    
-    
     
 def getBnumber(conn, username):
     '''Returns the student's bnumber'''
@@ -48,6 +47,18 @@ def getAssignments(conn, courseNum):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
     return curs.fetchall()
+    
+def update(conn, name, email, phone, residence, avail):
+    curs = conn.cursor()
+    nr = curs.execute('''update users
+                    set name = %s, email = %s, phone = %s, resHall = %s, availability =%s
+                    where email like %s''',
+                    [name, email, phone, residence, avail,email])
+    return nr
+    
 if __name__ == '__main__':
     conn = getConn('c9')
-    print(profile(conn, "Anah Lewi"))
+    
+    
+    print(profile(conn, 'alewi@wellesley.edu'))
+    print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))

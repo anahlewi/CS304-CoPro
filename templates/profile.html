@@ -1,23 +1,29 @@
-<html>
-    <head>
-        <title>Profile</title>
-        <link type="text/css"
-          rel="stylesheet"
-          href="{{ url_for('static', filename = 'style.css') }}">
-        <script type="{{ url_for('static', filename = 'app-js.js') }}"></script>
-    </head>
-    <body>
-        {% extends "base.html" %}
+{% extends "base.html" %}
+{% block title %} Profile {% endblock %}
+{% block head %}
+{%endblock%}
+
+
         {% block content %}
-        <div class="profile content">
-            <!-- Display info about the user show reshall and avail if student -->
-            <p>Name: {{user.name}}</p>
-            <p>email: {{user.email}}</p>
-            
-        
-            <button onclick="showEditForm()">Edit Profile Details</button>
-            <!--Here when button clicked show form for editing details -->
-            <form id="editForm" method="POST" action="">
+           {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div id="messages">
+                    {% for msg in messages %}
+                        <p>{{msg}}</p>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+             {% endwith %}
+                <!-- Display info about the user show reshall and avail if student -->
+                <div>
+                    Name: {{user.name}}
+                    <p>email: {{user.email}}</p>
+                    <p>BNumber: {{user.bnumber}}</p>
+                    <p>Phone: {{user.phone}}</p>
+                </div>
+                <button id ="edit-form-btn">Edit Profile Details</button>
+                <!--Here when button clicked show form for editing details -->
+            <form id="edit-profile-form" style="display: none" method="POST" action="{{url_for('update')}}">
                 <p><label for="edit-name">Name:</label>
                 <input type="text" id="new-name" name="name" value="{{name}}"></p>
                 <p><label for="edit-email">Email:</label>
@@ -30,14 +36,14 @@
                 <input type="text" id="new-avail" name="avail"></p>
                 <p><input type="submit" value="Submit Changes"></p>
             </form>
-        </div>
         {% endblock %}
         
         {% block script %}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
         <script>
         /* global $ */
-            $("#editForm").on('click', function showEditForm() {
-            var x = document.getElementById("editForm");
+            $("#edit-form-btn").on('click', function showEditForm() {
+            var x = document.getElementById("edit-profile-form");
             if (x.style.display === "none") {
                 x.style.display = "block";
             } 
@@ -46,9 +52,4 @@
             }
             });
         </script>
-        
         {% endblock %}
-   
-    </body>
-    
-</html>
