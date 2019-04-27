@@ -2,7 +2,7 @@
 -- Anah Lewi
 -- Miranda Hardy
 
--- This file set ups a 'database' for the CoPro web application. The database
+-- This file sets up a 'database' for the CoPro web application. The database
 -- consists of tables: users, courses, groups, groupsForPset, enrollment.
 
 -- Specify the C9 Database
@@ -12,8 +12,9 @@ use c9;
 -- Drop any existing tables if necessary
 drop table if exists users;
 drop table if exists courses;
-drop table if exists groups;
-drop table if exists groupForPset;
+drop table if exists psets;
+-- drop table if exists groups;
+-- drop table if exists groupForPset;
 drop table if exists enrollment;
 
 -- Defining Tables
@@ -36,37 +37,45 @@ create table if not exists users(
 	primary key (bnumber))
 	ENGINE = InnoDB;
 
+
 create table if not exists courses(
 	courseNum int,
 	courseName varchar(60),
-	instructor varchar(60),
+	instructor varchar(9),
 	semester varchar(7), 
-	psetNum int auto_increment,
-	psetTitle varchar(30),
-	maxSize  int,
-	dueDate date,
-	foreign key(instructor) references users(name) on delete restrict on update cascade,
+	foreign key (instructor) references users(bnumber),
 	primary key (courseNum))
 	ENGINE	= InnoDB;
 
-create table if not exists groups(
-	groupNum int auto_increment NOT NULL,
-	bnumber int,
-	foreign key (bnumber) references users(bnumber) on delete set null on update cascade,
-	primary key (groupNum))
-	ENGINE	= InnoDB;
+create table if not exists psets(
+	pid int auto_increment,
+	psetTitle varchar(60),
+	dueDate date,
+	maxSize int,
+	courseNum int, 
+	foreign key (courseNum) references courses(courseNum) on delete cascade on update cascade,
+	primary key (pid))
+	ENGINE = InnoDB;
+	
+	
+-- create table if not exists groups(
+-- 	groupNum int auto_increment NOT NULL,
+-- 	bnumber varchar(9),
+-- 	foreign key (bnumber) references users(bnumber) on delete set null on update cascade,
+-- 	primary key (groupNum))
+-- 	ENGINE	= InnoDB;
 
 
-create table if not exists groupForPset(
-	groupNum int,
-	psetNum int,
-	foreign key (groupNum) references groups(groupNum) on delete cascade on update cascade,
-	foreign key (psetNum) references courses(psetNum) on delete cascade on update cascade,
-	primary key (groupNum, psetNum))
-	ENGINE	= InnoDB;
+-- create table if not exists groupForPset(
+-- 	groupNum int,
+-- 	pid int,
+-- 	foreign key (groupNum) references groups(groupNum) on delete cascade on update cascade,
+-- 	foreign key (pid) references psets(pid) on delete cascade on update cascade,
+-- 	primary key (groupNum, pid))
+-- 	ENGINE	= InnoDB;
 	
 create table if not exists enrollment(
-	BNumber int references users(bnumber) on delete cascade on update cascade,
+	BNumber varchar(9) references users(bnumber) on delete cascade on update cascade,
 	courseNum int references courses(courseNum) on delete cascade on update cascade,
 	primary key (bnumber, courseNum))
 	ENGINE	= InnoDB;
