@@ -94,7 +94,23 @@ def newUser():
         name = current_user.name 
         email = current_user.email 
         return render_template('newUser.html', name = name, email = email)
+        
+@app.route('/courses/<courseNum>')
+@login_required
+def courses(courseNum):
+    conn = queries.getConn('c9')
 
+    courses = queries.courses(conn, courseNum)
+    return render_template('courses.html', courses = courses)
+    
+@app.route('/courses')
+@login_required
+def courses():
+    conn = queries.getConn('c9')
+
+    courses = queries.courses(conn, courseNum)
+    return render_template('courses.html')
+    
 @app.route('/update', methods =['POST'])
 @login_required
 def update():
@@ -128,10 +144,7 @@ def api_addexpense():
     return req
 
     
-@app.route('/courses')
-@login_required
-def courses():
-    return render_template('courses.html')
+
     
 @app.route('/assignments')
 @login_required

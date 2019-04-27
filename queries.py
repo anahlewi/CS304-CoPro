@@ -48,6 +48,12 @@ def getAssignments(conn, courseNum):
     curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
     return curs.fetchall()
     
+def courses(conn, courseNum):
+    '''Returns all the assignments from a course'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from courses where courseNum = %s''', [courseNum])
+    return curs.fetchall()
+    
 def update(conn, name, email, phone, residence, avail):
     curs = conn.cursor()
     nr = curs.execute('''update users
