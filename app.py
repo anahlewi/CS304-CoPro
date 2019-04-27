@@ -105,10 +105,8 @@ def courses(courseNum):
     
 @app.route('/courses')
 @login_required
-def courses():
+def coursesAll():
     conn = queries.getConn('c9')
-
-    courses = queries.courses(conn, courseNum)
     return render_template('courses.html')
     
 @app.route('/update', methods =['POST'])
