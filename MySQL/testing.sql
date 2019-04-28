@@ -6,43 +6,46 @@
 -- This code test inserting information into the tables in the database;
 use c9;
 -- Users
--- insert into users(username, bnumber, name, email, phone, userType, resHall, 
--- availability) values ('ngina', 'B20814255', 'Ngina Kariuki', 
--- 'ngina@wellesley.edu', '786-317-0000', 'Instructor', 'Tower Court West', NULL);
+insert into users(username, bnumber, name, email, phone, userType, resHall, 
+availability) values ('ngina', 'B20814255', 'Ngina Kariuki', 
+'ngina@wellesley.edu', '786-317-0000', 'Instructor', 'Tower Court West', NULL);
 
--- insert into users(username, bnumber, name, email, phone, userType, resHall, 
--- availability) values ('dalius', 'B20800497', 'Daphka Alius', 
--- 'dalius@wellesley.edu', '786-317-0380', 'Student', 'Tower Court West', NULL);
+insert into users(username, bnumber, name, email, phone, userType, resHall, 
+availability) values ('dalius', 'B20800497', 'Daphka Alius', 
+'dalius@wellesley.edu', '786-317-0380', 'Student', 'Tower Court West', NULL);
 
--- insert into users(username, bnumber, name, email, phone, userType, resHall, 
--- availability) values ('lanah', 'B20800000', 'Anah Lewi', 
--- 'alewi@wellesley.edu', '123-456-7890', 'Student', 'Stone Hall', NULL);
+insert into users(username, bnumber, name, email, phone, userType, resHall, 
+availability) values ('lanah', 'B20800000', 'Anah Lewi', 
+'alewi@wellesley.edu', '123-456-7890', 'Student', 'Stone Hall', NULL);
 
--- insert into users(username, bnumber, name, email, phone, userType, resHall, 
--- availability) values ('mhardy', 'B20800001', 'Miranda Hardy', 
--- 'mhardy@wellesley.edu', '098-765-4321', 'Student', 'Tower Court East', NULL);
+insert into users(username, bnumber, name, email, phone, userType, resHall, 
+availability) values ('mhardy', 'B20800001', 'Miranda Hardy', 
+'mhardy@wellesley.edu', '098-765-4321', 'Student', 'Tower Court East', NULL);
 
 
--- insert into courses(courseNum, courseName, instructor, semester) 
--- values ('13587', 'Intro to the Black Experience', 'B20814255', 'FA-2019');
+insert into courses(courseNum, courseName, instructor, semester) 
+values ('13587', 'Intro to the Black Experience', 'B20814255', 'FA-2019');
 
--- insert into courses(courseNum, courseName, instructor, semester) values
--- ('15568', 'The African American Literary Tradition', 'B20814255', 'FA-2019');
+insert into courses(courseNum, courseName, instructor, semester) values
+('15568', 'The African American Literary Tradition', 'B20814255', 'FA-2019');
 
--- insert into courses(courseNum, courseName, instructor, semester) values
--- ('15572', 'Musical Theater', 'B20814255','SP-2019');
+insert into courses(courseNum, courseName, instructor, semester) values
+('15572', 'Musical Theater', 'B20814255','SP-2019');
 
--- -- PSET
--- insert into psets(psetTitle,courseNum) values('Crud', '13587');
+-- PSET
+insert into psets(psetTitle,courseNum, dueDate) values('Crud', '13587', '2019-07-08');
+insert into psets(psetTitle,courseNum) values('Homework 01', '15568');
 
--- -- Groups
--- insert into groups(bnumber) values ('B20800497');
--- insert into groups(bnumber) values ('B20800000');
--- insert into groups(bnumber) values ('B20800001');
+-- Groups (Can't test this for some referential integrity problem)
+insert into groups(pid, courseNum) values 
+('1', 'B20800497');
 
--- -- GroupsForPset
--- insert into groups(bnumber) values ('B20800000');
 
+-- GroupsForPset
+insert into groupForPset(groupNum, bnumber) values 
+((select groupNum from groups where courseNum = 13587),'B20800000');
+
+-- Enrollment
 insert into enrollment(bnumber, courseNum) values('B20800497', '15772');
 insert into enrollment(bnumber, courseNum) values('B20800000', '15772');
 insert into enrollment(bnumber, courseNum) values('B20800001', '15772');
