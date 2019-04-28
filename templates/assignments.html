@@ -9,16 +9,15 @@
         {% extends "base.html" %}
         {% block content %}
         <div class="assignments content">
-            {% for assignment in assignmnets %}
+            
             {% block tile %}
             <div class="card">
                 <div class="container">
-                    <h4><b>{{assignment.psetTitle}}</b></h4>
-                    <p>{{assignment.dueDate}}</p>
+                    <h4><b>example</b></h4>
+                    <p>example</p>
                 </div>
             </div>
             {% endblock %}
-            {% endfor %}
         </div>
         {% endblock %}
     </body>
