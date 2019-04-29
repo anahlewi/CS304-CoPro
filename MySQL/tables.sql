@@ -10,8 +10,8 @@ use c9;
 
 
 -- Drop any existing tables if necessary
--- drop table if exists groupForPset;
--- drop table if exists groups;
+drop table if exists groupForPset;
+drop table if exists groups;
 drop table if exists enrollment;
 drop table if exists psets;
 drop table if exists courses;
@@ -55,7 +55,7 @@ create table if not exists courses(
 	courseName varchar(60),
 	instructor varchar(9),
 	semester varchar(7), 
-	foreign key (instructor) references users(bnumber),
+	foreign key (instructor) references users(bnumber) on update cascade,
 	primary key (courseNum))
 	ENGINE	= InnoDB;
 
@@ -65,29 +65,38 @@ create table if not exists psets(
 	dueDate date,
 	maxSize int,
 	courseNum int, 
-	foreign key (courseNum) references courses(courseNum) on delete cascade on update cascade,
+	foreign key (courseNum) references courses(courseNum) 
+	on delete cascade on update cascade,
 	primary key (pid))
 	ENGINE = InnoDB;
 	
 	
--- create table if not exists groups(
--- 	groupNum int auto_increment NOT NULL,
--- 	bnumber varchar(9),
--- 	foreign key (bnumber) references users(bnumber) on delete set null on update cascade,
--- 	primary key (groupNum))
--- 	ENGINE	= InnoDB;
+create table if not exists groups(
+	groupNum int auto_increment NOT NULL,
+	pid int,
+	courseNum int,
+	foreign key (pid) references psets(pid) 
+	on delete cascade on update cascade,
+	foreign key (courseNum) references courses(courseNum) 
+	on delete cascade on update cascade,
+	primary key (groupNum))
+	ENGINE	= InnoDB;
 
 
--- create table if not exists groupForPset(
--- 	groupNum int,
--- 	pid int,
--- 	foreign key (groupNum) references groups(groupNum) on delete cascade on update cascade,
--- 	foreign key (pid) references psets(pid) on delete cascade on update cascade,
--- 	primary key (groupNum, pid))
--- 	ENGINE	= InnoDB;
+create table if not exists groupForPset(
+	groupNum int,
+	bnumber varchar(9),
+	foreign key (groupNum) references groups(groupNum) 
+	on delete cascade on update cascade,
+	foreign key (bnumber) references users(bnumber) 
+	on delete cascade on update cascade,
+	primary key (groupNum))
+	ENGINE	= InnoDB;
 	
 create table if not exists enrollment(
-	BNumber varchar(9) references users(bnumber) on delete cascade on update cascade,
-	courseNum int references courses(courseNum) on delete cascade on update cascade,
+	BNumber varchar(9) references users(bnumber) 
+	on delete cascade on update cascade,
+	courseNum int references courses(courseNum) 
+	on delete cascade on update cascade,
 	primary key (bnumber, courseNum))
 	ENGINE	= InnoDB;
