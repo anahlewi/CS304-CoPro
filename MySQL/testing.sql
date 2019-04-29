@@ -32,18 +32,18 @@ insert into courses(courseNum, courseName, instructor, semester) values
 insert into courses(courseNum, courseName, instructor, semester) values
 ('15572', 'Musical Theater', 'B20814255','SP-2019');
 
--- -- PSET
+-- PSET
 insert into psets(psetTitle,courseNum, dueDate) values('Crud', '13587', '2019-07-08');
 insert into psets(psetTitle,courseNum) values('Homework 01', '15568');
 
--- -- Groups (Can't test this for some referential integrity problem)
--- insert into groups(pid, courseNum) values 
--- ('1', 'B20800497');
+-- Groups (Can't test this for some referential integrity problem)
+insert into groups(pid, courseNum) values 
+('1', 'B20800497');
 
 
--- insert into enrollment(bnumber, courseNum) values('B20800497', '15772');
--- insert into enrollment(bnumber, courseNum) values('B20800000', '15772');
--- insert into enrollment(bnumber, courseNum) values('B20800001', '15772');
+insert into enrollment(bnumber, courseNum) values('B20800497', '15772');
+insert into enrollment(bnumber, courseNum) values('B20800000', '15772');
+insert into enrollment(bnumber, courseNum) values('B20800001', '15772');
 
 -- GroupsForPset
 -- insert into groupForPset(groupNum, bnumber) values 

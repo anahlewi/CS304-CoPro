@@ -64,7 +64,7 @@ def roster(conn, courseNum):
 def getAssignments(conn, courseNum):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
+    curs.execute('''select pid, psetTitle, dueDate, maxSize from psets where courseNum = %s''', [courseNum])
     return curs.fetchall()
     
 def findCourse(conn, courseNum):
@@ -81,11 +81,20 @@ def courses(conn):
 def update(conn, name, email, phone, residence, avail):
     curs = conn.cursor()
     nr = curs.execute('''update users
-                    set name = %s, email = %s, phone = %s, resHall = %s, availability =%s
-                    where email like %s''',
+                    set name = %s, email = %s, phone = %s, resHall = %s, 
+                    availability =%s where email like %s''',
                     [name, email, phone, residence, avail,email])
     return nr
-    
+
+def searchAssignments(title):
+    newTitle = '%' + title + '%'
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''Select pid, psetTitle, dueDate, maxSize from psets 
+                    where psetTitle like %s''', [newTitle])
+    return curs.fetchall()
+                    
+                    
+                    
 if __name__ == '__main__':
     conn = getConn('c9')
     
