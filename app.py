@@ -129,12 +129,14 @@ def newUser():
 def courses(courseNum = None):
     if courseNum:
         conn = queries.getConn('c9')
-        courses = queries.findCourse(conn, courseNum)
+        course = queries.findCourse(conn, courseNum)
+        roster = queries.roster(conn, courseNum)
+        print(course['courseName'])
+        return render_template('roster.html', course = course, roster = roster)
     else:
         conn = queries.getConn('c9')
         courses = queries.courses(conn)
-        
-    return render_template('courses.html', courses = courses)
+        return render_template('courses.html', courses = courses)
 
     
 @app.route('/update', methods =['POST'])
@@ -172,7 +174,6 @@ def api_addexpense():
     return req
 
 @app.route('/assignments')
-@login_required
 def assignments():
     return render_template('assignments.html')
 

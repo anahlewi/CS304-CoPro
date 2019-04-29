@@ -56,7 +56,9 @@ def dashboard(conn, bnumber):
 def roster(conn, courseNum):
     '''Returns all the students enrolled in a courses'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from enrollment where courseNum = %s''',[courseNum]) #complicated query tbd
+    curs.execute('''select * from enrollment E 
+    inner join users as U on E.bnumber = U.bnumber
+    where courseNum = %s ''',[courseNum]) #complicated query tbd
     return curs.fetchall()
 
 def getAssignments(conn, courseNum):
@@ -69,7 +71,7 @@ def findCourse(conn, courseNum):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from courses where courseNum = %s''', [courseNum])
-    return curs.fetchall()
+    return curs.fetchone()
     
 def courses(conn):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
@@ -88,5 +90,6 @@ if __name__ == '__main__':
     conn = getConn('c9')
     
     
-    print(profile(conn, 'alewi@wellesley.edu'))
-    print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
+    # print(profile(conn, 'alewi@wellesley.edu'))
+    # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
+    print(roster(conn, 13587))

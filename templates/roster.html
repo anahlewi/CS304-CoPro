@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %} {{course.courseName}}{% endblock %}
+
+{%block content %}
+    <div class = "content">
+        <h1>{{course.courseName}}</h1>
+        <p>Semester: {{course.semester}}</p>
+        <p>Instructor: {{course.instructor}}</p>
+        
+        <h2>Roster</h2>
+        <div class = "roster">
+            {% for person in roster %}
+            <p>{{person.name}}</p>
+            {% endfor %}
+        </div>  
+    </div>
+{%endblock%}
