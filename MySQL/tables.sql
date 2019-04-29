@@ -18,16 +18,6 @@ drop table if exists courses;
 drop table if exists users;
 
 
-
--- =======
--- drop table if exists users;
--- drop table if exists courses;
--- drop table if exists psets;
--- -- drop table if exists groups;
--- -- drop table if exists groupForPset;
--- drop table if exists enrollment;
--- >>>>>>> 70dabe9932b4c5d54c7a35332d56ff810b03a83f
-
 -- Defining Tables
 create table if not exists users(
 	username varchar(30),
