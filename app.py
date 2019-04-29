@@ -175,12 +175,21 @@ def api_addexpense():
     
 
     
-@app.route('/assignments')
-@login_required
-def assignments():
-    return render_template('assignments.html')
+@app.route('/assignments', methods = ['GET'])
+# @login_required
+def assignments(): #I assume we're going to be grabbing assignments for a particular course
+    conn = queries.getConn('c9')
+    courseNum = '13587'
+    psets = queries.getAssignments(conn, courseNum)
+    return render_template('assignments.html', psets = psets)
 
-
+@app.route('/search', methods = ['POST'])
+def search():
+    title = request.form.get('searchterm')
+    
+    return redirect
+    
+    
 if __name__ == '__main__':
     app.debug = True
     app.run('0.0.0.0',8082)
