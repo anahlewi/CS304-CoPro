@@ -119,7 +119,6 @@ def newUser():
         else:
             queries.addUser(conn, bnumber, name, email, phone)
             return redirect(url_for('profile'))
-        
     else:
         name = current_user.name 
         email = current_user.email 
@@ -156,7 +155,7 @@ def update():
     else:
         return redirect(request.referrer)
 
-    
+#only works for gauth    
 @app.route('/home')
 def home():
     return """
@@ -172,9 +171,6 @@ def api_addexpense():
     req = request.get_json()
     return req
 
-    
-
-    
 @app.route('/assignments')
 @login_required
 def assignments():

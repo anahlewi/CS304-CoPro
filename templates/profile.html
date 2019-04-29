@@ -5,6 +5,8 @@
 
 
         {% block content %}
+        <div class="content">
+
            {% with messages = get_flashed_messages() %}
                 {% if messages %}
                     <div id="messages">
@@ -15,31 +17,37 @@
                 {% endif %}
              {% endwith %}
                 <!-- Display info about the user show reshall and avail if student -->
-                <div>
-                    Name: {{user.name}}
-                    <p>email: {{user.email}}</p>
-                    <p>BNumber: {{user.bnumber}}</p>
-                    <p>Phone: {{user.phone}}</p>
+                <h1 id="user-profile-heading">{{user.name}}</h1>
+                 <div>
+                  <img id="profile-img" src="{{ url_for('static', filename = 'images/placedholder.png') }}">
                 </div>
-                <button id ="edit-form-btn">Edit Profile Details</button>
                 <!--Here when button clicked show form for editing details -->
-            <form id="edit-profile-form" style="display: none" method="POST" action="{{url_for('update')}}">
-                <p><label for="edit-name">Name:</label>
-                <input type="text" id="new-name" name="name" value="{{name}}"></p>
-                <p><label for="edit-email">Email:</label>
-                <input type="text" id="new-email" name="email" value ="{{email}}" ></p>
-                <p><label for="edit-phone">Phone Number:</label>
-                <input type="text" id="new-phone" name="phone"></p>
-                <p><label for="edit-residence">Residence:</label>
-                <input type="text" id="new-residence" name="residence"></p>
-                <p><label for="edit-avail">Availability:</label>
-                <input type="text" id="new-avail" name="avail"></p>
-                <p><input type="submit" value="Submit Changes"></p>
+                <form id="edit-profile-form" method="POST" action="{{url_for('update')}}">
+                <p>
+                    <label for="edit-name">Name:</label>
+                    <input type="text" id="new-name" name="name" value="{{user.name}}">
+                    <label for="edit-email">Email:</label>
+                    <input type="text" id="new-email" name="email" value ="{{user.email}}">
+                </p>
+                <p>
+                    <label for="edit-bnumber">BNUMBER:</label>
+                    <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" disabled>
+                    <label for="edit-phone">Phone Number:</label>
+                    <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
+                </p>
+                <p>
+                    <label for="edit-residence">Residence:</label>
+                    <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
+                    <label for="edit-avail">Availability:</label>
+                    <input type="text" id="new-avail" name="avail" value={{user.availability}}> 
+                </p>
+                
+                <input type="submit" value="Save Changes">
             </form>
+            </div>
         {% endblock %}
         
         {% block script %}
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
         <script>
         /* global $ */
             $("#edit-form-btn").on('click', function showEditForm() {

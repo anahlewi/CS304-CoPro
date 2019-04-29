@@ -6,19 +6,22 @@
         <link type="text/css"
           rel="stylesheet"
           href="{{ url_for('static', filename = 'style.css') }}">
+          {% block head %}
+          {% endblock %}
     </head>
     <body>
         {%block navabar%}
         <ul class= "navbar">
-            <li class="nav_li"><a class= "" href="{{url_for('home')}}">Home</a></li>
+            <li class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
             <li class="nav_li"><a class= "" href="{{url_for('profile')}}">Profile</a></li>
             <li class="nav_li"><a class= ""  href="/courses">Courses</a></li>
             <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
         </ul>
         {%endblock%}
-        <div class="content">
+        
             
             {% block content %}
+            <div class="content">
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
                     <div id="messages">
@@ -37,9 +40,9 @@
                 <input type="submit" name="submit"/>
             </form>
              
-           
-            {% endblock %}
              </div>
+            {% endblock %}
+             
        
     </body>
 {% block script %}
