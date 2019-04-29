@@ -126,16 +126,17 @@ def newUser():
         return render_template('newUser.html', name = name, email = email)
         
 @app.route('/courses/<courseNum>')
-def courses(courseNum):
-    conn = queries.getConn('c9')
-
-    courses = queries.courses(conn, courseNum)
-    return render_template('courses.html', courses = courses)
-    
 @app.route('/courses')
-def coursesAll():
-    conn = queries.getConn('c9')
-    return render_template('courses.html')
+def courses(courseNum = None):
+    if courseNum:
+        conn = queries.getConn('c9')
+        courses = queries.findCourse(conn, courseNum)
+    else:
+        conn = queries.getConn('c9')
+        courses = queries.courses(conn)
+        
+    return render_template('courses.html', courses = courses)
+
     
 @app.route('/update', methods =['POST'])
 def update():
