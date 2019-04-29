@@ -10,17 +10,32 @@
     <body>
         {%block navabar%}
         <ul class= "navbar">
-            <li class="nav_li"><a class= "" href="/home">Home</a></li>
-            <li class="nav_li"><a class= "" href="/profile">Profile</a></li>
+            <li class="nav_li"><a class= "" href="{{url_for('home')}}">Home</a></li>
+            <li class="nav_li"><a class= "" href="{{url_for('profile')}}">Profile</a></li>
             <li class="nav_li"><a class= ""  href="/courses">Courses</a></li>
             <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
         </ul>
         {%endblock%}
         <div class="content">
+            
             {% block content %}
-             
-             
-             <a href="{{ url_for('login')}}">Login</a>
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div id="messages">
+                    {% for msg in messages %}
+                        {{msg}}
+                    {% endfor %}
+                    </div>
+                {% endif %}
+             {% endwith %}
+            <a href="{{url}}">Login</a>
+            <form method="POST" action="{{url_for('flaskLogin')}}" class="login-form">
+                <label for="username-email">Username or Email:</label>
+                <input type="text" name="username-email"/>
+                <label for="password">Password:</label>
+                <input type="password" name="password" />
+                <input type="submit" name="submit"/>
+            </form>
              
            
             {% endblock %}

@@ -33,6 +33,7 @@ create table if not exists users(
 	username varchar(30),
 	bnumber varchar(9) NOT NULL,
 	name varchar(60),
+	password varchar(60),
 	email varchar(30),
 	phone varchar(10),
 	userType enum('Student', 'Instructor') NOT NULL,

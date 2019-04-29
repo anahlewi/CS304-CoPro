@@ -5,6 +5,8 @@ import random, math
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
 
+
+
 app = Flask(__name__)
 app.config.update(
     SECRET_KEY='AIzaSyBbtqYZB9aGi4sPmzbKKJvpV2EpcwDY47g',
@@ -30,7 +32,8 @@ class User(UserMixin):
 @googlelogin.user_loader
 def get_user(userid):
     return users.get(userid)
-   
+
+  
    
 #connects to google auth -- third party login 
 @app.route('/oauth2callback')
@@ -39,19 +42,19 @@ def login(token, userinfo, **params):
     user = users[userinfo['id']] = User(userinfo)
     login_user(user)
     #uses google token and extra info in session 
-    session['token'] = json.dumps(token)
-    session['extra'] = params.get('extra')
+    session['logged_in'] =  True
+    
     conn = queries.getConn('c9')
-    print(user.name)
-    search = queries.profile(conn, user.name)
+    search = queries.google_login(conn, user.email)
+    session['username'] = search['username']
     if search:
-        return redirect(params.get('next',url_for('profile')))
+        return redirect(url_for('profile'))
         
     else:
         return redirect(params.get('next', url_for('newUser')))
         
 
-#allows user to logout for testing purpose --> more sophisticated login will be created    
+#allows user to logout for testing purpose --> more sophisticated logout will be created    
 @app.route('/logout')
 def logout():
     logout_user()
@@ -61,22 +64,49 @@ def logout():
         <p><a href="/">Return to /</a></p>
         """
 
+#shows index page and allows people to login
 @app.route('/')
 def index():
-    return render_template('base.html')
+    googleUrl =  googlelogin.login_url(approval_prompt='force')
+    return render_template('base.html', url = googleUrl)
+
+
+#manual login (users were manually added)
+@app.route('/manualLogin', methods = ['POST'])
+def flaskLogin():
+    conn = queries.getConn('c9')
+    check = ''
+    pwrd = request.form['password']
+    if '@' in request.form['username-email']:
+        email = request.form['username-email']
+        check = queries.emailLogin(conn, email, pwrd) 
+    else:
+        username =  request.form['username-email']
+        check = queries.nameLogin(conn, username, pwrd)
+
+    if not check:
+       flash('Incorrect username or password')
+       return redirect(request.referrer)
+       
+    session['username'] = check['username']
+    session['logged_in'] =  True
+    print(session['username'])
+    return redirect(url_for('profile'))
+
 
 #profile page can only be accessed once you have logged in 
-@app.route('/profile')
-@login_required
+@app.route('/profile', methods=['GET'])
 def profile():
-    conn = queries.getConn('c9')
-    userInfo = queries.profile(conn, current_user.email)
-    print(current_user.name)
-    return render_template('profile.html', user=userInfo)
+    if session.get('logged_in'):
+        conn = queries.getConn('c9')
+        userInfo = queries.profile(conn, session['username'])
+        return render_template('profile.html', user=userInfo)
+    else:
+        flash('Need to login to access page')
+        return index()
     
 #will be redirected to this url when your name is not in database
 @app.route('/newUser', methods = ['GET','POST'])
-@login_required
 def newUser():
     conn = queries.getConn('c9')
     if request.method == 'POST':
@@ -96,7 +126,6 @@ def newUser():
         return render_template('newUser.html', name = name, email = email)
         
 @app.route('/courses/<courseNum>')
-@login_required
 def courses(courseNum):
     conn = queries.getConn('c9')
 
@@ -104,29 +133,30 @@ def courses(courseNum):
     return render_template('courses.html', courses = courses)
     
 @app.route('/courses')
-@login_required
 def coursesAll():
     conn = queries.getConn('c9')
     return render_template('courses.html')
     
 @app.route('/update', methods =['POST'])
-@login_required
 def update():
-    conn = queries.getConn('c9')
-    name = request.form.get('name')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
-    residence = request.form.get('residence')
-    avail= request.form.get('avail')
-    
-    try:
-        updated = queries.update(conn, name, email, phone, residence, avail)
-    except:
-        flash('Unable to Update info')
-    return redirect(url_for('profile'))
+    if session.get('logged_in'):
+        conn = queries.getConn('c9')
+        name = request.form.get('name')
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        residence = request.form.get('residence')
+        avail= request.form.get('avail')
+        
+        try:
+            updated = queries.update(conn, name, email, phone, residence, avail)
+        except:
+            flash('Unable to Update info')
+        return redirect(url_for('profile'))
+    else:
+        return redirect(request.referrer)
+
     
 @app.route('/home')
-@login_required
 def home():
     return """
         <p>Hello, %s</p>
