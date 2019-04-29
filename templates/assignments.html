@@ -10,11 +10,30 @@
         {% block content %}
         <div class="assignments content">
             
+            <form id="search" method=POST action="{{url_for('search')}}">
+                <input id="searchterm" placeholder="Search" name="searchterm">
+                <button id="searchbutton" type="submit" name="submit" value="Search">Search</button>
+            </form>
+            
             {% block tile %}
             <div class="card">
                 <div class="container">
-                    <h4><b>example</b></h4>
-                    <p>example</p>
+                    <h4><b>Assignments</b></h4>
+                    <table id="assignment-list">
+                        <tr>
+                                <th>Title</th>
+                                <th>Due Date</th>
+                                <th>Max Size</th>
+                        </tr>
+                        {% for pset in psets %}
+                            <tr data-pid={{pset.pid}}>
+                                <td class="title">{{pset.psetTitle}}</td>
+                                <td class="dueDate">{{pset.dueDate}}</td>
+                                <td class="size">{{pset.maxSize}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                    
                 </div>
             </div>
             {% endblock %}
