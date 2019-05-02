@@ -83,27 +83,35 @@ def flaskLogin():
     else:
         username =  request.form['username-email']
         check = queries.nameLogin(conn, username, pwrd)
-
     if not check:
        flash('Incorrect username or password')
        return redirect(request.referrer)
-       
-    session['username'] = check['username']
     session['logged_in'] =  True
-    print(session['username'])
-    return redirect(url_for('profile'))
+    session['bnumber'] = check['bnumber']   
+    session['username'] = check['username']
+    return redirect(url_for('profile', bnumber = session['bnumber']))
 
 
-#profile page can only be accessed once you have logged in 
-@app.route('/profile', methods=['GET'])
-def profile():
+#Profile page allows user to access their information and other students information
+@app.route('/profile')   
+@app.route('/profile/')  
+@app.route('/profile/<bnumber>')
+def profile(bnumber = None):
+    conn = queries.getConn('c9')
+    #checks to see if user is logged into a session, otherwise will not be able to acesss
     if session.get('logged_in'):
-        conn = queries.getConn('c9')
-        userInfo = queries.profile(conn, session['username'])
-        return render_template('profile.html', user=userInfo)
+        if bnumber:
+            
+            userInfo = queries.profile(conn, bnumber)
+        else:
+            #if no bnumber is given redirect to current users information 
+            #using redirect if users input URL /profile or /profile/ --> no bnumber given 
+            return redirect(url_for('profile', bnumber = session['bnumber']))
     else:
         flash('Need to login to access page')
         return index()
+    return render_template('profile.html', user=userInfo)
+    
     
 #will be redirected to this url when your name is not in database
 @app.route('/newUser', methods = ['GET','POST'])
@@ -143,12 +151,13 @@ def courses(courseNum = None):
 def update():
     if session.get('logged_in'):
         conn = queries.getConn('c9')
-        name = request.form.get('name')
+        name = request.form.get('username')
         email = request.form.get('email')
         phone = request.form.get('phone')
+        bnumber = request.form.get('bnumber')
         residence = request.form.get('residence')
         avail= request.form.get('avail')
-        
+    
         try:
             updated = queries.update(conn, name, email, phone, residence, avail)
         except:
@@ -172,7 +181,6 @@ def home():
 def api_addexpense():
     req = request.get_json()
     return req
-
 @app.route('/assignments', methods = ['GET'])
 # @login_required
 def assignments(): #I assume we're going to be grabbing assignments for a particular course

@@ -11,10 +11,10 @@ def getConn(db):
     conn.autocommit(True)
     return conn
     
-def profile(conn, username):
-    '''Returns the information to populate the profile page'''
+def profile(conn, bnumber):
+    '''Returns the information to populate the profile page using bnumber'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where username like %s''',[username])
+    curs.execute('''select * from users where bnumber = %s''',[bnumber])
     return curs.fetchone()
 
 

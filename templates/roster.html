@@ -9,9 +9,21 @@
         
         <h2>Roster</h2>
         <div class = "roster">
-            {% for person in roster %}
-            <p>{{person.name}}</p>
-            {% endfor %}
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                </tr>
+                {% for person in roster %}
+                <tr class="table-row" data-id={{person.bnumber}}>
+                    <td class="name-row"><a href="/profile/{{person.bnumber}}">{{person.name}}</a></td>
+                    <td class="email-row">{{person.email}}</td>
+                    <td class="phone-row">{{person.phone}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+                    
         </div>  
     </div>
 {%endblock%}

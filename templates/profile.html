@@ -16,48 +16,84 @@
                     </div>
                 {% endif %}
              {% endwith %}
+             
                 <!-- Display info about the user show reshall and avail if student -->
                 <h1 id="user-profile-heading">{{user.name}}</h1>
                  <div>
                   <img id="profile-img" src="{{ url_for('static', filename = 'images/placedholder.png') }}">
                 </div>
                 <!--Here when button clicked show form for editing details -->
-                <form id="edit-profile-form" method="POST" action="{{url_for('update')}}">
-                <p>
-                    <label for="edit-name">Name:</label>
-                    <input type="text" id="new-name" name="name" value="{{user.name}}">
-                    <label for="edit-email">Email:</label>
-                    <input type="text" id="new-email" name="email" value ="{{user.email}}">
-                </p>
-                <p>
-                    <label for="edit-bnumber">BNUMBER:</label>
-                    <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" disabled>
-                    <label for="edit-phone">Phone Number:</label>
-                    <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
-                </p>
-                <p>
-                    <label for="edit-residence">Residence:</label>
-                    <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
-                    <label for="edit-avail">Availability:</label>
-                    <input type="text" id="new-avail" name="avail" value={{user.availability}}> 
-                </p>
+                <table id = "user-profile-table">
+                    <tr>
+                        <th>Username</th>
+                        <td style="border-top:none;">{{user.username}}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{user.email}}</td>
+                    </tr>
+                    <tr>
+                        <th>Residence</th>
+                        <td>{{user.resHall}}</td>
+                    </tr>
+                    <tr>
+                        <th>Bnumber</th>
+                        <td>{{user.bnumber}}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{user.phone}}</td>
+                    </tr>
+                    <tr>
+                        <th>Availability</th>
+                        <td>{{user.availability}}</td>
+                    </tr>
+                </table>
+                <button id="edit-form-btn">Edit Profile</button>
                 
-                <input type="submit" value="Save Changes">
-            </form>
+                
+                <form id="edit-profile-form" method="POST" style="display:none;" action="{{url_for('update')}}">
+                    <p>
+                        <label for="edit-username">Username:</label>
+                        <input type="text" id="new-username" name="username" value="{{user.username}}">
+                        <label for="edit-email">Email:</label>
+                        <input type="text" id="new-email" name="email" value ="{{user.email}}">
+                    </p>
+                    <p>
+                        <label for="edit-bnumber">BNUMBER:</label>
+                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" disabled>
+                        <label for="edit-phone">Phone Number:</label>
+                        <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
+                    </p>
+                    <p>
+                        <label for="edit-residence">Residence:</label>
+                        <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
+                        <label for="edit-avail">Availability:</label>
+                        <input type="text" id="new-avail" name="avail" value={{user.availability}}> 
+                    </p>
+                    
+                    <input type="submit" value="Save Changes">
+                </form>
             </div>
+            
+            
+             
         {% endblock %}
         
         {% block script %}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
         <script>
         /* global $ */
             $("#edit-form-btn").on('click', function showEditForm() {
             var x = document.getElementById("edit-profile-form");
             if (x.style.display === "none") {
                 x.style.display = "block";
+                
+                var table = document.getElementById("user-profile-table")
+                table.style.display = "none";
+                this.style.display="none";
             } 
-            else {
-                x.style.display = "none";
-            }
             });
         </script>
         {% endblock %}
