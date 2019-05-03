@@ -209,8 +209,8 @@ def search():
     pset = queries.titleFound(conn, title, courseNum, bnumber)
     if pset:
         return render_template('assignments.html', psets = pset)
-    else:
-        flash('No pset of that title is found. Enter a valid pset title.')
+    # else:
+        # flash('No pset of that title is found. Enter a valid pset title.')
         # return redirect(request.referrer)
     
     
