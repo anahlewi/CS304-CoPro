@@ -50,7 +50,7 @@ create table if not exists courses(
 	-- ENGINE	= InnoDB;
 
 create table if not exists psets(
-	pid int auto_increment,
+	pid int NOT NULL,
 	psetTitle varchar(60),
 	dueDate date,
 	maxSize int,
@@ -61,7 +61,7 @@ create table if not exists psets(
 	
 	
 create table if not exists groups(
-	groupNum int auto_increment NOT NULL,
+	groupNum int NOT NULL,
 	pid int,
 	courseNum int,
 	foreign key (pid) references psets(pid),
@@ -74,8 +74,8 @@ create table if not exists groupForPset(
 	groupNum int,
 	bnumber varchar(9),
 	foreign key (groupNum) references groups(groupNum),
-	foreign key (bnumber) references users(bnumber),
-	primary key (groupNum, bnumber));
+	foreign key (bnumber) references users(bnumber)
+);
 	-- ENGINE	= InnoDB;
 	
 create table if not exists enrollment(
