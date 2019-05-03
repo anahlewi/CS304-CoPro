@@ -104,13 +104,3 @@ insert into groupForPset(groupNum, bnumber) values ('19', 'B20800001');
 insert into groupForPset(groupNum, bnumber) values ('23', 'B20800001');
 insert into groupForPset(groupNum, bnumber) values ('23', 'B20800497');
 insert into groupForPset(groupNum, bnumber) values ('23', 'B20800000');
-
-
-
-
--- select pid, psetTitle, dueDate, maxSize, groupNum from psets 
--- inner join 
--- (select groupNum, courseNum, bnumber from groups 
--- inner join groupForPset using (grouPNum)
--- where courseNum = '13587') as table2 using(courseNum) 
--- where bnumber = 'B20800497';
