@@ -25,7 +25,7 @@ create table if not exists users(
 	name varchar(60),
 	password varchar(60),
 	email varchar(30),
-	phone varchar(10),
+	phone varchar(12),
 	userType enum('Student', 'Instructor') NOT NULL,
 	resHall varchar(30) NULL,
 	availability set('Monday Morning 8-12', 'Monday Afternoon 12-5', 
