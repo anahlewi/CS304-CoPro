@@ -66,12 +66,12 @@ def getAssignments(conn, courseNum, bnumber):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
                     inner join 
-                    (select groupNum, courseNum, bnumber from groups 
-                    inner join groupForPset using (grouPNum)
-                    where courseNum = %s) as table2 using(courseNum) 
-                    where bnumber = %s''', [courseNum, bnumber])
+                    (select groupNum, pid, courseNum from groups 
+                    inner join groupForPset using (groupNum)
+                    where bnumber = %s) as table2 using(pid) 
+                    where table2.courseNum = %s''', [bnumber, courseNum])
     return curs.fetchall()
-    
+
 def findCourse(conn, courseNum):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)

@@ -139,9 +139,9 @@ def courses(courseNum = None):
         conn = queries.getConn('c9')
         course = queries.findCourse(conn, courseNum)
         roster = queries.roster(conn, courseNum)
-        session['courseNum'] = courseNum
-        print(course['courseName'])
-        return render_template('roster.html', course = course, roster = roster)
+        bnumber = session.get('bnumber')
+        psets = queries.getAssignments(conn, courseNum, bnumber)
+        return render_template('roster.html', course = course, roster = roster, psets = psets)
     else:
         conn = queries.getConn('c9')
         courses = queries.courses(conn)
@@ -186,36 +186,12 @@ def api_addexpense():
 
 
 @app.route('/assignments', methods = ['GET'])
-# @login_required
+# # @login_required
 def assignments():
-    courseNum = session.get('courseNum')
-    if courseNum:
-        conn = queries.getConn('c9')
-        bnumber = session.get('bnumber')
-        psets = queries.getAssignments(conn, courseNum, bnumber)
-        return render_template('assignments.html', psets = psets)
-    else:
-        flash('Please select a course to view assignments.')
-        return redirect(url_for('courses'))
+    return redirect()
     
     
-    
-@app.route('/search', methods = ['POST'])
-def search():
-    title = request.form.get('searchterm')
-    bnumber = session.get('bnumber')
-    courseNum = session.get('courseNum')
-    conn = queries.getConn('c9')
-    pset = queries.titleFound(conn, title, courseNum, bnumber)
-    if pset:
-        return render_template('assignments.html', psets = pset)
-    # else:
-        # flash('No pset of that title is found. Enter a valid pset title.')
-        # return redirect(request.referrer)
-    
-    
-    
-    return redirect
+
     
     
 if __name__ == '__main__':

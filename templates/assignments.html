@@ -9,15 +9,11 @@
         {% extends "base.html" %}
         {% block content %}
         <div class="assignments content">
-            
             <form id="search" method=POST action="{{url_for('search')}}">
                 <input id="searchterm" placeholder="Search by title" name="searchterm">
                 <button id="searchbutton" type="submit" name="submit" value="Search">Search</button>
             </form>
-            
-            
-            <!--TBD-->
-            <!--<a href = "url_for('newAssignment')">Add a new assignment</a>-->
+         
             
             
             {% block tile %}
@@ -33,7 +29,7 @@
                         </tr>
                         {% for pset in psets %}
                             <tr data-pid={{pset.pid}}>
-                                <td class="title">{{pset.psetTitle}}</td>
+                                <td class="title" href="{{url_for('/assignments'}}">{{pset.psetTitle}}</td>
                                 <td class="dueDate">{{pset.dueDate}}</td>
                                 <td class="size">{{pset.maxSize}}</td>
                                 <td class='group'>{{pset.groupNum}}</td>

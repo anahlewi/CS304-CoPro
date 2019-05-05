@@ -7,15 +7,15 @@
         {% block content %}
         <div class="content">
 
-           {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <div id="messages">
-                    {% for msg in messages %}
-                        <p>{{msg}}</p>
-                    {% endfor %}
-                    </div>
-                {% endif %}
-             {% endwith %}
+           <!--{% with messages = get_flashed_messages() %}-->
+           <!--     {% if messages %}-->
+           <!--         <div id="messages">-->
+           <!--         {% for msg in messages %}-->
+           <!--             <p>{{msg}}</p>-->
+           <!--         {% endfor %}-->
+           <!--         </div>-->
+           <!--     {% endif %}-->
+           <!--  {% endwith %}-->
              
                 <!-- Display info about the user show reshall and avail if student -->
                 <h1 id="user-profile-heading">{{user.name}}</h1>

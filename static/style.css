@@ -102,3 +102,11 @@ table td{
 .container {
   padding: 2px 16px;
 }
+
+#messages{
+  margin-left: 15%;
+}
+
+#assignment-list{
+  border-spacing: 21px;
+}

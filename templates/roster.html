@@ -23,6 +23,25 @@
                 </tr>
                 {% endfor %}
             </table>
+        <div class = "assignments">    
+            <h2><b>Assignments</b></h2>
+                    <table id="assignment-list">
+                        <tr>
+                                <th>Title</th>
+                                <th>Due Date</th>
+                                <th>Max Size</th>
+                                <th>Group</th>
+                        </tr>
+                        {% for pset in psets %}
+                            <tr data-pid={{pset.pid}}>
+                                <td class="title">{{pset.psetTitle}}</td>
+                                <td class="dueDate">{{pset.dueDate}}</td>
+                                <td class="size">{{pset.maxSize}}</td>
+                                <td class='group'>{{pset.groupNum}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+        </div>
                     
         </div>  
     </div>
