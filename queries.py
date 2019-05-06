@@ -61,10 +61,15 @@ def roster(conn, courseNum):
     where courseNum = %s ''',[courseNum]) #complicated query tbd
     return curs.fetchall()
 
-def getAssignments(conn, courseNum):
+def getAssignments(conn, courseNum, bnumber):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select pid, psetTitle, dueDate, maxSize from psets where courseNum = %s''', [courseNum])
+    curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
+                    inner join 
+                    (select groupNum, courseNum, bnumber from groups 
+                    inner join groupForPset using (grouPNum)
+                    where courseNum = %s) as table2 using(courseNum) 
+                    where bnumber = %s''', [courseNum, bnumber])
     return curs.fetchall()
     
 def findCourse(conn, courseNum):
@@ -86,15 +91,19 @@ def update(conn, name, email, phone, residence, avail):
                     [name, email, phone, residence, avail,email])
     return nr
 
-def searchAssignments(title):
-    newTitle = '%' + title + '%'
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''Select pid, psetTitle, dueDate, maxSize from psets 
-                    where psetTitle like %s''', [newTitle])
-    return curs.fetchall()
+def titleFound(conn, title, courseNum, bnumber):
+    psets = getAssignments(conn, courseNum, bnumber)
+    print("ENTER")
+    print(psets)
+    if psets:
+        for pset in psets:
+            if title.lower() in pset.get('psetTitle').lower():
+                print(pset.get('psetTitle'))
+                return pset
+    else:
+        return None
                     
-                    
-                    
+
 if __name__ == '__main__':
     conn = getConn('c9')
     
