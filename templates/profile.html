@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %} Profile {% endblock %}
+{% block title %} {{user.name}} {% endblock %}
 {% block head %}
 {%endblock%}
 
@@ -19,8 +19,11 @@
              
                 <!-- Display info about the user show reshall and avail if student -->
                 <h1 id="user-profile-heading">{{user.name}}</h1>
-                 <div>
-                  <img id="profile-img" src="{{ url_for('static', filename = 'images/placedholder.png') }}">
+                 <div class="container-img">
+                  <img id="profile-img" src="{{ url_for('pic', bnumber= user.bnumber) }}">
+                  <div class="overlay">
+                     <div class="text"> HEY</div>
+                  </div>
                 </div>
                 <!--Here when button clicked show form for editing details -->
                 <table id = "user-profile-table">
@@ -49,10 +52,17 @@
                         <td>{{user.availability}}</td>
                     </tr>
                 </table>
-                <button id="edit-form-btn">Edit Profile</button>
+                {%if currentUser %} 
+                    <button id="edit-form-btn">Edit Profile</button>
+                {% endif %}
                 
+                {%if not currentUser %}
+                    <button id="connect-btn">Connect</button>
+                {% endif %}
                 
-                <form id="edit-profile-form" method="POST" style="display:none;" action="{{url_for('update')}}">
+                <form id="edit-profile-form" method="POST" style="display:none;" enctype="multipart/form-data"  action="{{url_for('update')}}">
+                    <label>Upload New Image:<input type="file" name="pic"></label>
+                    <input type="submit" name="submit" value="Upload New Image">
                     <p>
                         <label for="edit-username">Username:</label>
                         <input type="text" id="new-username" name="username" value="{{user.username}}">
@@ -61,7 +71,7 @@
                     </p>
                     <p>
                         <label for="edit-bnumber">BNUMBER:</label>
-                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" disabled>
+                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}">
                         <label for="edit-phone">Phone Number:</label>
                         <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
                     </p>
@@ -71,9 +81,16 @@
                         <label for="edit-avail">Availability:</label>
                         <input type="text" id="new-avail" name="avail" value={{user.availability}}> 
                     </p>
+            
+                    <input type="submit" name="submit" value="Save Changes">
                     
-                    <input type="submit" value="Save Changes">
+                  
                 </form>
+                <!--<form method="POST" action="{{url_for('file_upload')}}" enctype="multipart/form-data">-->
+                <!--        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" >-->
+                <!--         <input type="file" name="pic">-->
+
+                <!--</form>-->
             </div>
             
             
