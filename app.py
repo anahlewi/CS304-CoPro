@@ -270,8 +270,7 @@ def file_upload():
         return redirect(url_for('profile'))
     except Exception as err:
         flash('Upload failed {why}'.format(why=err))
-        return redirect(url_for('profile')) 
->>>>>>> 268b1bb2b0aece36f5e34342cc9457d0e06a52b5
+        return redirect(url_for('profile'))
     
 if __name__ == '__main__':
     app.debug = True
