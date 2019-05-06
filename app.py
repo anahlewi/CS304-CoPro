@@ -2,7 +2,7 @@ import json
 import queries 
 from flask import (Flask, url_for, redirect, session, render_template, request, flash, send_from_directory, Response)
 from werkzeug import secure_filename
-import random, math
+import random, math, datetime
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
 
@@ -154,6 +154,7 @@ def courses(courseNum = None):
         conn = queries.getConn('c9')
         course = queries.findCourse(conn, courseNum)
         roster = queries.roster(conn, courseNum)
+        session['courseNum'] = courseNum
         bnumber = session.get('bnumber')
         psets = queries.getAssignments(conn, courseNum, bnumber)
         return render_template('roster.html', course = course, roster = roster, psets = psets)
@@ -270,7 +271,51 @@ def file_upload():
         return redirect(url_for('profile'))
     except Exception as err:
         flash('Upload failed {why}'.format(why=err))
-        return redirect(url_for('profile'))
+        return redirect(url_for('profile')) 
+
+
+@app.route('/newAssignment', methods=['GET','POST'])      
+def newAssignment():
+    
+    if request.method == 'GET':
+        return render_template('assignment.html')
+    else:
+        psetNum = request.form.get('psetNum')
+        psetTitle = request.form.get('psetTitle')
+        dateString = request.form.get('dueDate')
+        maxSize = request.form.get('maxSize')
+        conn = queries.getConn('c9')
+        courseNum  = session.get('courseNum')
+        print('dueDate String', dateString)
+        if not psetNum:
+            print('ENTER')
+            flash('Missing input: Assignment Number is missing')
+        if not psetTitle:
+            print('ENTER')
+            flash('Missing input: Assignment Title is missing')
+        
+        #datetime is not working
+        if dateString:
+            try:
+                print('ENTER')
+                dueDate = datetime.datetime.strptime(dateString, "%m-%d-%Y").strftime("%Y-%m-%d")
+                print(isinstance(dueDate, datetime.date))
+            except:
+                flash('Invalid input: Please insert the date in the format mm-dd-yyyy')
+        else:
+            flash('Missing input: Due Date is missing')
+        if not maxSize:
+            try:
+                maxSize = int(maxSize)
+            except:
+                flash('Invalid input: Please insert an integer')
+        if (psetNum and psetTitle and isinstance(dueDate, datetime.date) 
+        and isinstance(maxSize, int)):
+            queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
+            return redirect(url_for('courses'), courseNum = courseNum)
+            
+        return render_template('assignment.html')
+        
     
 if __name__ == '__main__':
     app.debug = True

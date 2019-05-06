@@ -91,18 +91,12 @@ def update(conn, name, email, phone, residence, avail):
                     [name, email, phone, residence, avail,email])
     return nr
 
-def titleFound(conn, title, courseNum, bnumber):
-    psets = getAssignments(conn, courseNum, bnumber)
-    print("ENTER")
-    print(psets)
-    if psets:
-        for pset in psets:
-            if title.lower() in pset.get('psetTitle').lower():
-                print(pset.get('psetTitle'))
-                return pset
-    else:
-        return None
-                    
+def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into psets(psetNum, psetTitle, dueDate, maxSize,
+    courseNum) values (%s, %s, %s, %s, %s)''', 
+    [psetNum, psetTitle, dueDate, maxSize, courseNum])
+    
 
 if __name__ == '__main__':
     conn = getConn('c9')
