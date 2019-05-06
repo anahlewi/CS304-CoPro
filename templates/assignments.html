@@ -1,12 +1,5 @@
-<html>
-    <head>
-        <title>{% block title %} Assignments {% endblock %}</title>
-         <link type="text/css"
-          rel="stylesheet"
-          href="{{ url_for('static', filename = 'style.css') }}">
-    </head>
-    <body>
-        {% extends "base.html" %}
+{% extends "base.html" %}
+{% block title %} Assignments {% endblock %}
         {% block content %}
         <div class="assignments content">
             

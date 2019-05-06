@@ -17,7 +17,7 @@
                 </tr>
                 {% for person in roster %}
                 <tr class="table-row" data-id={{person.bnumber}}>
-                    <td class="name-row"><a href="/profile/{{person.bnumber}}">{{person.name}}</a></td>
+                    <td class="name-row"><a href="{{url_for('profile', bnumber = person.bnumber)}}">{{person.name}}</a></td>
                     <td class="email-row">{{person.email}}</td>
                     <td class="phone-row">{{person.phone}}</td>
                 </tr>

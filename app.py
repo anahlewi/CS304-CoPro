@@ -1,13 +1,24 @@
 import json
 import queries 
-from flask import (Flask, url_for, redirect, session, render_template, request, flash)
+from flask import (Flask, url_for, redirect, session, render_template, request, flash, send_from_directory, Response)
+from werkzeug import secure_filename
 import random, math
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
 
 
 
+
+
 app = Flask(__name__)
+import sys, os, random
+import imghdr
+import MySQLdb
+
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+
+app.config['UPLOADS'] = 'uploads'
+
 app.config.update(
     SECRET_KEY='AIzaSyBbtqYZB9aGi4sPmzbKKJvpV2EpcwDY47g',
     GOOGLE_LOGIN_CLIENT_ID='137996221652-06lt05ueh81jt9rtse06idsdgggmoda5.apps.googleusercontent.com',
@@ -110,7 +121,11 @@ def profile(bnumber = None):
     else:
         flash('Need to login to access page')
         return index()
-    return render_template('profile.html', user=userInfo)
+    if bnumber == session['bnumber']:
+        currentUser = True
+    else:
+        currentUser = False 
+    return render_template('profile.html', user=userInfo, currentUser = currentUser, logged_in = session['logged_in'])
     
     
 #will be redirected to this url when your name is not in database
@@ -140,29 +155,52 @@ def courses(courseNum = None):
         course = queries.findCourse(conn, courseNum)
         roster = queries.roster(conn, courseNum)
         print(course['courseName'])
-        return render_template('roster.html', course = course, roster = roster)
+        return render_template('roster.html', course = course, roster = roster, logged_in = session['logged_in'])
     else:
         conn = queries.getConn('c9')
         courses = queries.courses(conn)
-        return render_template('courses.html', courses = courses)
+        return render_template('courses.html', courses = courses, logged_in = session['logged_in'] )
 
     
 @app.route('/update', methods =['POST'])
 def update():
     if session.get('logged_in'):
-        conn = queries.getConn('c9')
-        name = request.form.get('username')
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        bnumber = request.form.get('bnumber')
-        residence = request.form.get('residence')
-        avail= request.form.get('avail')
-    
-        try:
-            updated = queries.update(conn, name, email, phone, residence, avail)
-        except:
-            flash('Unable to Update info')
-        return redirect(url_for('profile'))
+        
+        if request.form['submit'] == 'Save Changes':
+            conn = queries.getConn('c9')
+            name = request.form.get('username')
+            email = request.form.get('email')
+            phone = request.form.get('phone')
+            bnumber = request.form.get('bnumber')
+            residence = request.form.get('residence')
+            avail= request.form.get('avail')
+        
+            try:
+                updated = queries.update(conn, name, email, phone, residence, avail)
+            except:
+                flash('Unable to Update info')
+            return redirect(url_for('profile'))
+        else:
+             try:
+                bnumber = request.form['bnumber'] # may throw error
+                f = request.files['pic']
+                mime_type = imghdr.what(f)
+                if mime_type.lower() not in ['jpeg','gif','png', 'jpg']:
+                    raise Exception('Not a JPEG, GIF, JPG or PNG: {}'.format(mime_type))
+                filename = secure_filename('{}.{}'.format(bnumber,mime_type))
+                pathname = os.path.join(app.config['UPLOADS'],filename)
+                f.save(pathname)
+                flash('Upload successful')
+                conn = queries.getConn('c9')
+                curs = conn.cursor()
+                curs.execute('''insert into picfile(bnumber,filename) values (%s,%s)
+                            on duplicate key update filename = %s''',
+                         [bnumber, filename, filename])
+                return redirect(url_for('profile'))
+             except Exception as err:
+                flash('Upload failed {why}'.format(why=err))
+                return redirect(url_for('profile')) 
+            
     else:
         return redirect(request.referrer)
 
@@ -181,6 +219,8 @@ def home():
 def api_addexpense():
     req = request.get_json()
     return req
+    
+    
 @app.route('/assignments', methods = ['GET'])
 # @login_required
 def assignments(): #I assume we're going to be grabbing assignments for a particular course
@@ -194,7 +234,52 @@ def search():
     title = request.form.get('searchterm')
     
     return redirect
-    
+
+
+
+@app.route('/pic/<bnumber>')
+def pic(bnumber):
+    conn = queries.getConn('c9')
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    numrows = curs.execute('''select bnumber,filename from users inner join picfile using (bnumber)
+                    where bnumber = %s''', [bnumber])
+    if numrows == 0:
+        flash('No picture for {}'.format(bnumber))
+        return redirect(url_for('profile'))
+    row = curs.fetchone()
+    val = send_from_directory(app.config['UPLOADS'],row['filename'])
+    return val
+
+
+@app.route('/pics/')
+def pics():
+    conn = queries.getConn('c9')
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('select bnumber,filename from picfile inner join users using (bnumber)')
+    pics = curs.fetchall()
+    return render_template('all_pics.html',pics=pics)
+
+@app.route('/upload/', methods=["POST"])
+def file_upload():
+    try:
+        bnumber = request.form['bnumber'] # may throw error
+        f = request.files['pic']
+        mime_type = imghdr.what(f)
+        if mime_type.lower() not in ['jpeg','gif','png']:
+            raise Exception('Not a JPEG, GIF or PNG: {}'.format(mime_type))
+        filename = secure_filename('{}.{}'.format(bnumber,mime_type))
+        pathname = os.path.join(app.config['UPLOADS'],filename)
+        f.save(pathname)
+        flash('Upload successful')
+        conn = queries.getConn('c9')
+        curs = conn.cursor()
+        curs.execute('''insert into picfile(bnumber,filename) values (%s,%s)
+                            on duplicate key update filename = %s''',
+                         [bnumber, filename, filename])
+        return redirect(url_for('profile'))
+    except Exception as err:
+        flash('Upload failed {why}'.format(why=err))
+        return redirect(url_for('profile')) 
     
 if __name__ == '__main__':
     app.debug = True
