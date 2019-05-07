@@ -157,7 +157,11 @@ def courses(courseNum = None):
         session['courseNum'] = courseNum
         bnumber = session.get('bnumber')
         psets = queries.getAssignments(conn, courseNum, bnumber)
-        return render_template('roster.html', course = course, roster = roster, psets = psets)
+        instructor = queries.isInstructor(conn, bnumber)
+        return render_template('roster.html', course = course, 
+                                roster = roster, psets = psets, 
+                                instructor = instructor)
+            
     else:
         conn = queries.getConn('c9')
         courses = queries.courses(conn)
