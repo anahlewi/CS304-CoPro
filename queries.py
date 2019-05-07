@@ -64,7 +64,11 @@ def roster(conn, courseNum):
 def getAssignments(conn, courseNum, bnumber):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
+    if isInstructor(conn, bnumber):
+        curs.execute('''select pid, psetTitle, dueDate, maxSize from psets 
+                    where courseNum = %s''', [courseNum])
+    else:
+        curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
                     inner join 
                     (select groupNum, pid, courseNum from groups 
                     inner join groupForPset using (groupNum)
@@ -97,7 +101,18 @@ def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
     courseNum) values (%s, %s, %s, %s, %s)''', 
     [psetNum, psetTitle, dueDate, maxSize, courseNum])
     
-
+def isInstructor(conn, bnumber):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select userType from users where bnumber = %s''', [bnumber])
+    dct = curs.fetchone()
+    return dct.get('userType') == 'Instructor'
+    
+    
+    
+    
+    
+    
+    
 if __name__ == '__main__':
     conn = getConn('c9')
     
@@ -105,3 +120,4 @@ if __name__ == '__main__':
     # print(profile(conn, 'alewi@wellesley.edu'))
     # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
     print(roster(conn, 13587))
+    print(isInstructor(conn, 'B20800497'))
