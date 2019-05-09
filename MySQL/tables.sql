@@ -36,8 +36,8 @@ create table if not exists users(
 	'Friday Night 7-11', 'Saturday Morning 8-12', 'Saturday Afternoon 12-5', 
 	'Saturday Night 7-11', 'Sunday Morning 8-12', 'Sunday Afternoon 12-5', 
 	'Sunday Night 7-11') NULL,
-	primary key (bnumber))
-	ENGINE = InnoDB;
+	primary key (bnumber));
+	-- ENGINE = InnoDB;
 
 
 create table if not exists courses(
