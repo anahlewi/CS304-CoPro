@@ -151,22 +151,24 @@ def newUser():
 @app.route('/courses/<courseNum>')
 @app.route('/courses')
 def courses(courseNum = None):
+    conn = queries.getConn('c9')
+    bnumber = session.get('bnumber')
+    instructor = queries.isInstructor(conn, bnumber)
     if courseNum:
-        conn = queries.getConn('c9')
         course = queries.findCourse(conn, courseNum)
         roster = queries.roster(conn, courseNum)
         session['courseNum'] = courseNum
-        bnumber = session.get('bnumber')
+        
         psets = queries.getAssignments(conn, courseNum, bnumber)
-        instructor = queries.isInstructor(conn, bnumber)
+        
         return render_template('roster.html', course = course, 
                                 roster = roster, psets = psets, 
                                 instructor = instructor)
             
     else:
-        conn = queries.getConn('c9')
         courses = queries.courses(conn)
-        return render_template('courses.html', courses = courses, logged_in = session['logged_in'] )
+        return render_template('courses.html', courses = courses, 
+        logged_in = session['logged_in'], instructor=instructor)
 
     
 @app.route('/update', methods =['POST'])
@@ -340,6 +342,35 @@ def deleteAssignment(pid):
         elif request.form.get('submit') == 'delete':
             queries.deleteAssignment(conn, pid)
     return redirect(url_for('courses', courseNum=courseNum, instructor=instructor))
+
+@app.route('/newCourse', methods=['GET', 'POST'])
+def newCourse():
+    bnumber = session.get('bnumber')
+    if request.method == 'GET':
+        return render_template('newCourse.html', bnumber = bnumber)
+    else:
+        courseNum = request.form.get('courseNum')
+        courseName = request.form.get('courseName')
+        semester = request.form.get('semester')
+        if courseNum:
+            try:
+                courseNum = int(courseNum)
+            except:
+                flash('Invalid input: Please enter integer values')
+        else:
+            flash('Missing input: Course Number is missing')
+            
+        if not courseName:
+            flash('Missing input: Course Title is missing')
+        if not semester:
+            flash('Missing input: Semester is missing')
+            
+        if isinstance(courseNum, int) and courseName and semester:
+            conn = queries.getConn('c9')
+            queries.addCourse(conn, courseNum, courseName, bnumber, semester)
+            return redirect(url_for('courses'))
+    return render_template('newCourse.html', bnumber = bnumber)
+        
     
 if __name__ == '__main__':
     app.debug = True
