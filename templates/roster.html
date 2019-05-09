@@ -38,22 +38,17 @@
                                 <th>Group</th>
                         </tr>
                         {% for pset in psets %}
-                            {% if instructor %}
                             <tr data-pid={{pset.pid}}>
-                                <td class="title"><a href="{{url_for('deleteAssignment', pid = pset.pid)}}">{{pset.psetTitle}}</a></td>
+                                {% if instructor %}
+                                    <td class="title"><a href="{{url_for('deleteAssignment', pid = pset.pid)}}">{{pset.psetTitle}}</a></td>
+                                {% else %}
+                                    <td class="title">{{pset.psetTitle}}</td>
+                                {% endif%}
                                 <td class="dueDate">{{pset.dueDate}}</td>
                                 <td class="size">{{pset.maxSize}}</td>
                                 <td class='group'>{{pset.groupNum}}</td>
                             </tr>
-                            {% endif %}
-                            
-                                <tr data-pid={{pset.pid}}>
-                                    <td class="title">{{pset.psetTitle}}</td>
-                                    <td class="dueDate">{{pset.dueDate}}</td>
-                                    <td class="size">{{pset.maxSize}}</td>
-                                    <td class='group'>{{pset.groupNum}}</td>
-                                </tr>
-                            
+
                         {% endfor %}
                         
                         
