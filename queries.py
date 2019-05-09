@@ -124,6 +124,11 @@ def deleteAssignment(conn, pid):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''delete from psets where pid=%s''', [pid])
     
+def addCourse(conn, courseNum, courseName, instructor, semester):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into courses(courseNum, courseName, instructor, 
+    semester) values (%s, %s, %s, %s)''', 
+    [courseNum, courseName, instructor, semester])
     
 if __name__ == '__main__':
     conn = getConn('c9')
