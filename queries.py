@@ -96,8 +96,9 @@ def update(conn, name, email, phone, residence, avail):
     return nr
 
 def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
+    print('Enter Add Assignment')
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''insert into psets(psetNum, psetTitle, dueDate, maxSize,
+    curs.execute('''insert into psets(pid, psetTitle, dueDate, maxSize,
     courseNum) values (%s, %s, %s, %s, %s)''', 
     [psetNum, psetTitle, dueDate, maxSize, courseNum])
     
@@ -108,9 +109,20 @@ def isInstructor(conn, bnumber):
     return dct.get('userType') == 'Instructor'
     
     
+def getAssignment(conn, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from psets where pid = %s''', [pid])
+    return curs.fetchone()
+
+def updatePsets(conn, pid, psetTitle, dueDate, maxSize, courseNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''update psets set pid = %s, psetTitle = %s, dueDate = %s, 
+                    maxSize = %s, courseNum= %s where pid = %s''', 
+                    [pid, psetTitle, dueDate, maxSize, courseNum, pid])
     
-    
-    
+def deleteAssignment(conn, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''delete from psets where pid=%s''', [pid])
     
     
 if __name__ == '__main__':
