@@ -25,7 +25,11 @@
             </table>
         <div class = "assignments">    
             <h2><b>Assignments</b></h2>
-            <button class="new-assignment">Add a new assignment</button>
+            
+            {% if instructor %}
+                <a href={{url_for('newAssignment')}}>Add a new assignment</a>
+            {% endif %}
+            
                     <table id="assignment-list">
                         <tr>
                                 <th>Title</th>
@@ -35,12 +39,19 @@
                         </tr>
                         {% for pset in psets %}
                             <tr data-pid={{pset.pid}}>
-                                <td class="title">{{pset.psetTitle}}</td>
+                                {% if instructor %}
+                                    <td class="title"><a href="{{url_for('deleteAssignment', pid = pset.pid)}}">{{pset.psetTitle}}</a></td>
+                                {% else %}
+                                    <td class="title">{{pset.psetTitle}}</td>
+                                {% endif%}
                                 <td class="dueDate">{{pset.dueDate}}</td>
                                 <td class="size">{{pset.maxSize}}</td>
                                 <td class='group'>{{pset.groupNum}}</td>
                             </tr>
+
                         {% endfor %}
+                        
+                        
                     </table>
         </div>
                     
@@ -48,12 +59,3 @@
     </div>
 {%endblock%}
 
-{%block script%}
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script>
-            $(".new-assignment").on("click",function(event){
-               $('.content').load('/newAssignment');
-            });
-    </script>
-
-{%endblock%}

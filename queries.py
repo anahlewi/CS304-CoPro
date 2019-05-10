@@ -64,7 +64,11 @@ def roster(conn, courseNum):
 def getAssignments(conn, courseNum, bnumber):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
+    if isInstructor(conn, bnumber):
+        curs.execute('''select pid, psetTitle, dueDate, maxSize from psets 
+                    where courseNum = %s''', [courseNum])
+    else:
+        curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
                     inner join 
                     (select groupNum, pid, courseNum from groups 
                     inner join groupForPset using (groupNum)
@@ -92,12 +96,40 @@ def update(conn, name, email, phone, residence, avail):
     return nr
 
 def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
+    print('Enter Add Assignment')
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''insert into psets(psetNum, psetTitle, dueDate, maxSize,
+    curs.execute('''insert into psets(pid, psetTitle, dueDate, maxSize,
     courseNum) values (%s, %s, %s, %s, %s)''', 
     [psetNum, psetTitle, dueDate, maxSize, courseNum])
     
+def isInstructor(conn, bnumber):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select userType from users where bnumber = %s''', [bnumber])
+    dct = curs.fetchone()
+    return dct.get('userType') == 'Instructor'
+    
+    
+def getAssignment(conn, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from psets where pid = %s''', [pid])
+    return curs.fetchone()
 
+def updatePsets(conn, pid, psetTitle, dueDate, maxSize, courseNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''update psets set pid = %s, psetTitle = %s, dueDate = %s, 
+                    maxSize = %s, courseNum= %s where pid = %s''', 
+                    [pid, psetTitle, dueDate, maxSize, courseNum, pid])
+    
+def deleteAssignment(conn, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''delete from psets where pid=%s''', [pid])
+    
+def addCourse(conn, courseNum, courseName, instructor, semester):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into courses(courseNum, courseName, instructor, 
+    semester) values (%s, %s, %s, %s)''', 
+    [courseNum, courseName, instructor, semester])
+    
 if __name__ == '__main__':
     conn = getConn('c9')
     
@@ -105,3 +137,4 @@ if __name__ == '__main__':
     # print(profile(conn, 'alewi@wellesley.edu'))
     # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
     print(roster(conn, 13587))
+    print(isInstructor(conn, 'B20800497'))

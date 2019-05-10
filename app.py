@@ -151,18 +151,24 @@ def newUser():
 @app.route('/courses/<courseNum>')
 @app.route('/courses')
 def courses(courseNum = None):
+    conn = queries.getConn('c9')
+    bnumber = session.get('bnumber')
+    instructor = queries.isInstructor(conn, bnumber)
     if courseNum:
-        conn = queries.getConn('c9')
         course = queries.findCourse(conn, courseNum)
         roster = queries.roster(conn, courseNum)
         session['courseNum'] = courseNum
-        bnumber = session.get('bnumber')
+        
         psets = queries.getAssignments(conn, courseNum, bnumber)
-        return render_template('roster.html', course = course, roster = roster, psets = psets,  logged_in = session['logged_in'])
+        
+        return render_template('roster.html', course = course, 
+                                roster = roster, psets = psets, 
+                                instructor = instructor)
+            
     else:
-        conn = queries.getConn('c9')
         courses = queries.courses(conn)
-        return render_template('courses.html', courses = courses, logged_in = session['logged_in'] )
+        return render_template('courses.html', courses = courses, 
+        logged_in = session['logged_in'], instructor=instructor)
 
     
 @app.route('/update', methods =['POST'])
@@ -276,39 +282,87 @@ def newAssignment():
     else:
         psetNum = request.form.get('psetNum')
         psetTitle = request.form.get('psetTitle')
-        dateString = request.form.get('dueDate')
+        dueDate = request.form.get('dueDate').encode('utf-8')
         maxSize = request.form.get('maxSize')
         conn = queries.getConn('c9')
         courseNum  = session.get('courseNum')
-        print('dueDate String', type(dateString))
-        if not psetNum:
-            print('ENTER')
-            flash('Missing input: Assignment Number is missing')
-        if not psetTitle:
-            print('ENTER')
-            flash('Missing input: Assignment Title is missing')
-        
-        #datetime is not working
-        if dateString:
+        print('dueDate String', dueDate)
+        if psetNum:
             try:
-                print('ENTER')
-                dueDate = datetime.strptime(dateString, "%m-%d-%Y").strftime("%Y-%m-%d")
-                print(isinstance(dueDate, datetime.date))
+                psetNum = int(psetNum)
             except:
-                flash('Invalid input: Please insert the date in the format mm-dd-yyyy')
+                flash('Invalid input: Please insert')
         else:
-            flash('Missing input: Due Date is missing')
-        if not maxSize:
+            flash('Missing input: Assignment Number is missing')
+        if not dueDate:
+            flash('Missing input: Assignment Duedate is missing')
+        if not psetTitle:
+            flash('Missing input: Assignment Title is missing')
+        if maxSize:
             try:
                 maxSize = int(maxSize)
             except:
                 flash('Invalid input: Please insert an integer')
-        if (psetNum and psetTitle and isinstance(dueDate, datetime.date) 
-        and isinstance(maxSize, int)):
+                
+        print('number', psetNum)
+        print('title', psetTitle)
+        print('dueDate', dueDate)
+        print('maxSize', maxSize)
+        if psetNum and psetTitle and dueDate and isinstance(maxSize, int):
             queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
-            return redirect(url_for('courses'), courseNum = courseNum)
+            return redirect(url_for('courses', courseNum = courseNum))
             
         return render_template('assignment.html')
+        
+@app.route('/update/<pid>', methods = ['GET', 'POST'])
+def deleteAssignment(pid):
+    conn = queries.getConn('c9')
+    courseNum = session.get('courseNum')
+    bnumber = session.get('bnumber')
+    instructor = queries.isInstructor(conn, bnumber)
+    if request.method == 'GET':
+        info = queries.getAssignment(conn, pid)
+        return render_template('update.html', pset = info, courseNum = courseNum)
+    else:
+        if request.form.get('submit') == 'update':
+            newPid = request.form.get('pid')
+            psetTitle = request.form.get('psetTitle')
+            dueDate = request.form.get('dueDate')
+            maxSize = request.form.get('maxSize')
+            queries.updatePsets(conn, newPid, psetTitle, dueDate, maxSize, courseNum)
+            return redirect(url_for('courses', courseNum = courseNum, instructor = instructor))
+            
+        elif request.form.get('submit') == 'delete':
+            queries.deleteAssignment(conn, pid)
+    return redirect(url_for('courses', courseNum=courseNum, instructor=instructor))
+
+@app.route('/newCourse', methods=['GET', 'POST'])
+def newCourse():
+    bnumber = session.get('bnumber')
+    if request.method == 'GET':
+        return render_template('newCourse.html', bnumber = bnumber)
+    else:
+        courseNum = request.form.get('courseNum')
+        courseName = request.form.get('courseName')
+        semester = request.form.get('semester')
+        if courseNum:
+            try:
+                courseNum = int(courseNum)
+            except:
+                flash('Invalid input: Please enter integer values')
+        else:
+            flash('Missing input: Course Number is missing')
+            
+        if not courseName:
+            flash('Missing input: Course Title is missing')
+        if not semester:
+            flash('Missing input: Semester is missing')
+            
+        if isinstance(courseNum, int) and courseName and semester:
+            conn = queries.getConn('c9')
+            queries.addCourse(conn, courseNum, courseName, bnumber, semester)
+            return redirect(url_for('courses'))
+    return render_template('newCourse.html', bnumber = bnumber)
         
     
 if __name__ == '__main__':

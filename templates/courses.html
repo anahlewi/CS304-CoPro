@@ -11,11 +11,16 @@
                             <p>{{course.instructor}}</p> 
                         </div>
                     </div>
-                    {% endfor %}
+                {% endfor %}
+                <div>
+                    {% if instructor %}
+                        <a href = "{{url_for('newCourse', bnumber = bnumber)}}">Add a new course</a>
+                    {% endif %}
+                </div>
                 {% endblock %}
                 </div>
         {% endblock %}
-
+        
     {% block script %}          
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script>

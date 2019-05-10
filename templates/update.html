@@ -1,0 +1,49 @@
+<html>
+    <head>
+        <title>{% block title %} Update {% endblock %}</title>
+         <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        
+        {% if pset %}
+        
+            
+            <div class="update content">
+                <h2>Update {{pset.psetTitle}}</h2>
+            	<form method=POST action="{{url_for('deleteAssignment', pid = pset.pid)}}">
+                  <table>
+                        <tr>
+                          <td><label for="pid">Assignment Number</label></td>
+                          <td><input name='pid' value='{{pset.pid}}'></td> 
+                        </tr>
+                        <tr>
+                          <td><label for="psetTitle">Assignment Title</label></td>
+                          <td><input name='psetTitle' value='{{pset.psetTitle}}'></td>
+                        </tr>
+                        <tr>
+                          <td><label for="dueDate">Due Date</label></td>
+                          <td><input name='dueDate' value='{{pset.dueDate}}'></td>
+                        </tr>
+                        <tr>
+                          <td><label for="maxSize">Max Group Size</label></td>
+                          <td><input name='maxSize' value='{{pset.maxSize}}'></td>
+                        </tr>
+                        <tr>
+                          <td><label for="courseNum">Course Number</label></td>
+                          <td><input name='courseNum' value='{{courseNum}}' disabled></td>
+                        </tr>
+                  </table>
+                  <input type="submit" name="submit" value="update">
+                  <input type="submit" name="submit" value="delete">
+                </form>
+            
+          	</div>
+      	{% endif %}
+        {% endblock %}
+    </body>
+    
+</html>
