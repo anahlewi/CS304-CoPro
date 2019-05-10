@@ -21,9 +21,6 @@
                 <h1 id="user-profile-heading">{{user.name}}</h1>
                  <div class="container-img">
                   <img id="profile-img" src="{{ url_for('pic', bnumber= user.bnumber) }}">
-                  <div class="overlay">
-                     <div class="text"> HEY</div>
-                  </div>
                 </div>
                 <!--Here when button clicked show form for editing details -->
                 <table id = "user-profile-table">
@@ -62,7 +59,7 @@
                 
                 <form id="edit-profile-form" method="POST" style="display:none;" enctype="multipart/form-data"  action="{{url_for('update')}}">
                     <label>Upload New Image:<input type="file" name="pic"></label>
-                    <input type="submit" name="submit" value="Upload New Image">
+                    <button id="upload-btn">Upload New Image</button>
                     <p>
                         <label for="edit-username">Username:</label>
                         <input type="text" id="new-username" name="username" value="{{user.username}}">
@@ -71,7 +68,7 @@
                     </p>
                     <p>
                         <label for="edit-bnumber">BNUMBER:</label>
-                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}">
+                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" disabled>
                         <label for="edit-phone">Phone Number:</label>
                         <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
                     </p>
@@ -79,7 +76,33 @@
                         <label for="edit-residence">Residence:</label>
                         <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
                         <label for="edit-avail">Availability:</label>
-                        <input type="text" id="new-avail" name="avail" value={{user.availability}}> 
+                          <input list="availability" name="availability" id="check" value={{user.availability}}>
+                              <datalist id="availability">
+                                <option value="Monday Morning 8-12">
+                                <option value='Monday Afternoon 12-5'>
+                                <option value='Monday Night 7-11'>
+                                <option value='Tuesday Morning 8-12'>
+                                <option value="Tuesday Afternoon 12-5">
+                                <option value="Tuesday Night 7-11">
+                                <option value="Wednesday Morning 8-12">
+                                <option value="Wednesday Afternoon 12-5">
+                                <option value="Wednesday Night 7-11">
+                                <option value="Thursday Morning 8-12">
+                                <option value="Thursday Afternoon 12-5">
+                                <option value="Thursday Night 7-9">
+                                <option value="Friday Morning 8-12">
+                                <option value="Friday Afternoon 12-5">
+                                <option value="Friday Night 7-9">
+                                <option value="Saturday Morning 8-12">
+                                <option value="Saturday Afternoon 12-5">
+                                <option value="Saturday Night 7-9">
+                                <option value="Sunday Morning 8-12">
+                                <option value="Sunday Afternoon 12-5">
+                                <option value="Sunday Night 7-9">
+                              </datalist>
+                              
+    
+                        <!--<input type="text" id="new-avail" name="avail" value={{user.availability}}> -->
                     </p>
             
                     <input type="submit" name="submit" value="Save Changes">
@@ -101,6 +124,8 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
         <script>
+        var URL = "{{url_for('file_upload')}}";
+
         /* global $ */
             $("#edit-form-btn").on('click', function showEditForm() {
             var x = document.getElementById("edit-profile-form");
@@ -112,5 +137,48 @@
                 this.style.display="none";
             } 
             });
+            
+            $("#upload-btn").click(function(e){
+                e.preventDefault();
+                sendImg();
+            });
+            
+            $("#check").change(function(e){
+                e.preventDefault();
+                a = $(this).val();
+                console.log(a);
+                $.get('/availabilityAjax', {'availability': a, 'bnumber':$('#new-bnumber').val() }, function(data){
+                    console.log(data);
+                });
+            });
+            
+            function sendImg() {
+                console.log("Sending to the back end");
+               $.ajax({
+                      url:URL,
+                      type:'POST',
+                      data:new FormData($("#edit-profile-form")[0]),
+                      bnumber: $("#new-bnumber").val(),
+                      cache:false,
+                      processData:false,
+                      contentType:false,
+                      error:function(){
+                          console.log("upload error")
+                      },
+                      success:function(data){
+                          console.log(data);
+                          console.log("upload success");
+                          $('profile-img').attr("src", "{{url_for('pic', bnumber=" + bnumber + ")}}")
+                      }
+                  });
+
+            }  
+            function updateImg(obj){
+                if(obj.error) {
+                     console.log(obj.err)
+                } else {
+                    $('profile-img').attr("src","pic/"+obj.image)
+                }
+            }
         </script>
         {% endblock %}
