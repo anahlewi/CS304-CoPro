@@ -29,8 +29,9 @@ googlelogin = GoogleLogin(app)
 users = {}
 #url build so that the user comes first then build off ie mhardy2/course/assignments
 
-#user class for each user session 
+
 class User(UserMixin):
+    '''user class for each user session '''
     def __init__(self, userinfo):
         self.id = userinfo['id']
         self.name = userinfo['name']
@@ -40,14 +41,14 @@ class User(UserMixin):
 
 @googlelogin.user_loader
 def get_user(userid):
+    '''Returns a userid'''
     return users.get(userid)
 
   
-   
-#connects to google auth -- third party login 
 @app.route('/oauth2callback')
 @googlelogin.oauth2callback
 def login(token, userinfo, **params):
+    '''connects to google auth -- third party login '''
     user = users[userinfo['id']] = User(userinfo)
     login_user(user)
     #uses google token and extra info in session 
@@ -73,16 +74,17 @@ def logout():
         <p><a href="/">Return to /</a></p>
         """
 
-#shows index page and allows people to login
 @app.route('/')
 def index():
+    '''Returns the template for the login page'''
     googleUrl =  googlelogin.login_url(approval_prompt='force')
     return render_template('base.html', url = googleUrl)
 
 
-#manual login (users were manually added)
+
 @app.route('/manualLogin', methods = ['POST'])
 def flaskLogin():
+    '''Manual login for users who are already signed up'''
     conn = queries.getConn('c9')
     check = ''
     pwrd = request.form['password']
@@ -106,6 +108,7 @@ def flaskLogin():
 @app.route('/profile/')  
 @app.route('/profile/<bnumber>')
 def profile(bnumber = None):
+    '''Renders a user's profile and allow users to access other student's profile'''
     conn = queries.getConn('c9')
     #checks to see if user is logged into a session, otherwise will not be able to acesss
     if session.get('logged_in'):
@@ -129,6 +132,7 @@ def profile(bnumber = None):
 #will be redirected to this url when your name is not in database
 @app.route('/newUser', methods = ['GET','POST'])
 def newUser():
+    '''Returns a template for user sign up if the user is not found in the database'''
     if request.method == 'GET':
         return render_template('newUser.html')
     else:
@@ -176,7 +180,7 @@ def courses(courseNum = None):
                                 logged_in = session['logged_in'], instructor = instructor)
             
     else:
-        courses = queries.courses(conn)
+        courses = queries.courses(conn, bnumber)
         return render_template('courses.html', courses = courses, 
         logged_in = session['logged_in'], instructor=instructor)
 
