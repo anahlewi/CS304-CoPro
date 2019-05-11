@@ -96,6 +96,11 @@ table td{
   opacity: 1;
 }
 
+.card:hover {
+    background: #66b2b2;
+    color: white;
+}
+
 .text {
   color: white;
   font-size: 20px;

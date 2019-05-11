@@ -27,7 +27,7 @@
                 {% if messages %}
                     <div id="messages" style="margin-left:45%;">
                     {% for msg in messages %}
-                        <p>{{msg}}</p>
+                        {{msg}}
                     {% endfor %}
                     </div>
                 {% endif %}
@@ -35,20 +35,26 @@
             {% block content %}
             
             <div class="content" style="width:45%;">
-
-            <h1 style="text-align:center;">CoPro</h1>
-            <form method="POST" action="{{url_for('flaskLogin')}}">
-              <input type="text" id="login" class="fadeIn second" name="username-email" placeholder="login">
-              <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
-              <input type="submit" class="fadeIn fourth" value="Log In">
-
-            </form>
-            <div id="customBtn" class="customGPlusSignIn">
-              <span class="icon"></span>
-              <span class="buttonText">Google</span>
-            </div>
-          
-             <a href="{{url}}">Login</a>
+            {% if logged_in %}
+                <div>
+                    Hi, {{name}}
+                </div>
+            {% else %}
+                <h1 style="text-align:center;">CoPro</h1>
+                <form method="POST" action="{{url_for('flaskLogin')}}">
+                  <input type="text" id="login" class="fadeIn second" name="username-email" placeholder="login">
+                  <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
+                  <input type="submit" class="fadeIn fourth" value="Log In">
+    
+                </form>
+                <div id="customBtn" class="customGPlusSignIn">
+                  <span class="icon"></span>
+                  <span class="buttonText">Google</span>
+                </div>
+              
+                 <a href="{{url}}">Login</a>
+                 
+            {% endif %}
              </div>
             {% endblock %}
              

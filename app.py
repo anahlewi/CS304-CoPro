@@ -86,6 +86,7 @@ def flaskLogin():
     conn = queries.getConn('c9')
     check = ''
     pwrd = request.form['password']
+    print(pwrd)
     if '@' in request.form['username-email']:
         email = request.form['username-email']
         check = queries.emailLogin(conn, email, pwrd) 
@@ -144,6 +145,8 @@ def newUser():
         name = current_user.name 
         email = current_user.email 
         return render_template('newUser.html', name = name, email = email)
+
+
         
 @app.route('/courses/<courseNum>')
 @app.route('/courses')
@@ -222,21 +225,31 @@ def availabilityAjax():
 
 
 
-@app.route('/algorithmAjax', methods=['POST'])
+@app.route('/algorithmAjax', methods=['GET'])
 def match():
     courseNum = request.args.get('courseNum')
-    
+    pid = request.args.get('pid')
     try:
         conn = queries.getConn('c9')
         curs = conn.cursor(MySQLdb.cursors.DictCursor)
         roster = queries.roster(conn, courseNum)
-        allGroups = queries.allGroups(conn)
-        groupNum = matching.groupNum(allGroups)
-        check = curs.execute('''insert into groups(groupNum, pid, courseNum)
-        values(%s, %s, %s)''',[groupNum, pid])
+        matches = matching.match(roster)
+        for match in matches:
+            
+            allGroups = queries.allGroups(conn)
+            groupNum = matching.groupNum(allGroups)
+            check = curs.execute('''insert into groups(groupNum, pid, courseNum)
+            values(%s, %s, %s)''',[groupNum, pid, courseNum])
+            curs.execute('''insert into groupForPset(groupNum, bnumber)
+            values(%s, %s)''',[groupNum, match])
+        
+            if matches[match]:
+                curs.execute('''insert into groupForPset(groupNum, bnumber)
+                values(%s, %s)''',[groupNum, matches[match]])
+        
+        return jsonify( {'error': False, 'match': matches })
     except Exception as err:
         return jsonify( {'error': True, 'err': str(err) } )
-        
 
 
 @app.route('/pic/<bnumber>')
@@ -266,7 +279,8 @@ def pics():
 def group(courseNum, groupNum, pid):
     conn = queries.getConn('c9')
     course = queries.findCourse(conn, courseNum)
-    group = queries.groups(conn, courseNum, pid)
+    group = queries.psetGroup(conn, courseNum, pid, groupNum)
+
     return render_template('groups.html', course = course,
     groupNum = groupNum, group = group, logged_in = session['logged_in'])
 
@@ -277,7 +291,7 @@ def groupProf(courseNum, pid):
     course = queries.findCourse(conn, courseNum)
     groups = queries.groups(conn, courseNum, pid)
     numGroups = queries.numGroup(conn, courseNum, pid)
-    return render_template('groupProf.html', course = course, courseNum = courseNum,
+    return render_template('groupProf.html', course = course, courseNum = courseNum, pid = pid,
     numGroups = numGroups['numGroups'], groups = groups, logged_in = session['logged_in'])
     
     

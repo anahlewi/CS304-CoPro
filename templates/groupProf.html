@@ -16,7 +16,6 @@
                             <tr data-pid={{group.groupNum}}>
                                     <td class="group-num">{{group.groupNum}}</td>
                             </tr>
-
                         {% endfor %}
                     </table>
         </div>
@@ -30,7 +29,7 @@
     
     $('#match').click(function(e){
         console.log( {{courseNum}} );
-        $.get(URL,{'courseNum': {{courseNum}}, 'pid': {{}} }, function(data){
+        $.get(URL,{'courseNum': {{courseNum}}, 'pid': {{pid}} }, function(data){
             console.log(data);
         });
     });

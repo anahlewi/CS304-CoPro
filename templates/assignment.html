@@ -1,11 +1,7 @@
-<html>
-    <head>
-        <title>{% block title %} Assignments {% endblock %}</title>
-         <link type="text/css"
-          rel="stylesheet"
-          href="{{ url_for('static', filename = 'style.css') }}">
-    </head>
-    <body>
+{% extends "base.html" %}
+
+{% block title %} Assignments {% endblock %}
+{% block content %}
         <div class=" content">
         	<form method=POST action="{{url_for('newAssignment')}}">
 
@@ -34,6 +30,4 @@
                     <input type='submit' value='Upload Assignment'>
         	</form>
         </div>
-    </body>
-    
-</html>
+{% endblock %}
