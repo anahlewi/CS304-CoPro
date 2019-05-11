@@ -12,18 +12,20 @@ def getConn(db):
     return conn
     
 def profile(conn, bnumber):
-    '''Returns the information to populate the profile page using bnumber'''
+    '''Returns the information to populate the profile page using a bnumber'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from users where bnumber = %s''',[bnumber])
     return curs.fetchone()
 
 
 def emailLogin(conn, email, password):
+    '''Returns user information to process login with email/password login'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from users where email = %s and password = %s''',[email, password])
     return curs.fetchone()
 
 def google_login(conn, email):
+    '''Returns a username to process google login with provided email address'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select username from users where email = %s ''',[email])
     return curs.fetchone()
