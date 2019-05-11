@@ -36,11 +36,12 @@ def nameLogin(conn, username, password):
     return curs.fetchone()
     
 
-def addUser(conn, bnumber, name, email, phone):
+def addUser(conn, username, password, bnumber, name, email, phone, userType):
     '''Adds new user to database'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''insert into users(bnumber, name, email, phone) 
-                         values (%s, %s, %s, %s)''',[bnumber, name, email, phone])
+    curs.execute('''insert into users(username, password, bnumber, name, email, 
+                    phone, userType) values (%s, %s, %s, %s, %s, %s, %s)''',
+                    [username, password, bnumber, name, email, phone, userType])
     
 def getBnumber(conn, username):
     '''Returns the student's bnumber'''
@@ -169,7 +170,11 @@ def match(conn, userResHall):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute(''' select * from users where users.resHall = %s''', [userResHall])
     return curs.fetchall()
-    
+
+def usernameTaken(conn, username):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select username from users where username = %s''', [username])
+    return curs.fetchone()
 if __name__ == '__main__':
     conn = getConn('c9')
     

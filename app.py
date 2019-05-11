@@ -7,7 +7,7 @@ import matching
 from datetime import datetime
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
-
+import bcrypt
 app = Flask(__name__)
 import sys, os, random
 import imghdr
@@ -129,21 +129,34 @@ def profile(bnumber = None):
 #will be redirected to this url when your name is not in database
 @app.route('/newUser', methods = ['GET','POST'])
 def newUser():
-    conn = queries.getConn('c9')
-    if request.method == 'POST':
+    if request.method == 'GET':
+        return render_template('newUser.html')
+    else:
+        conn = queries.getConn('c9')
+        username = request.form.get('username')
+        password = request.form.get('password1')
+        password2 = request.form.get('password2')
         name = request.form.get('name')
         email = request.form.get('email')
         phone = request.form.get('phone')
         bnumber = request.form.get('bnumber')
-        if len(bnumber) == 0:
-            flash('enter a bnumber')
-        else:
-            queries.addUser(conn, bnumber, name, email, phone)
+        userType = request.form.get('userType')
+        print('queries', queries.usernameTaken(conn, username))
+        if queries.usernameTaken(conn, username):
+            flash('Username taken. Enter a new username')
+            return render_template('newUser.html')
+        if password != password2:
+            flash('Passwords do not match')
+            return render_template('newUser.html')
+        # hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        if (username and password and name and email and phone and bnumber 
+        and userType):
+            queries.addUser(conn, username, password, bnumber, name, email, phone,
+            userType)
             return redirect(url_for('profile'))
-    else:
-        name = current_user.name 
-        email = current_user.email 
-        return render_template('newUser.html', name = name, email = email)
+            
+    
+        
         
 @app.route('/courses/<courseNum>')
 @app.route('/courses')

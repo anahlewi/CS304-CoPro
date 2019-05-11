@@ -10,17 +10,31 @@
     <body>
         {% block content %}
             <div class="profile content">
-            <h1>Add Info</h1>
-            <form id="newUser" method="POST" action="">
+            <h1>Create A New Account</h1>
+            <form id="newUser" method="POST" action="{{url_for('newUser')}}">
+                <p><label for="add-username">Username:</label>
+                <input type="text" id="add-username" name="username" required></p>
+                <p><label for="add-passwd">Password:</label>
+                <input type="password" id="add-passwd" name="password1" required></p>
+                <p><label for="add-passwd2">Password Again:</label>
+                <input type="password" id="add-passwd2" name="password2" required></p>
                 <p><label for="add-name">Name:</label>
-                <input type="text" id="add-name" name="name" value ="{{name}}"></p>
+                <input type="text" id="add-name" name="name" required></p>
+                <p><label for="add-bnumber">BNumber:</label>
+                <input type="text" id="add-bnumber" name="bnumber" required></p>
                 <p><label for="add-email">Email:</label>
-                <input type="text" id="add-email" name="email" value="{{email}}"></p>
+                <input type="text" id="add-email" name="email" required></p>
+                <p><label for="userType" id="add-userType" name='userType'>Type of User:</label>
+                <select name='userType' required>
+                    <option value='none'>Choose One</option>
+                    <option value ='Student'>Student</option>
+                    <option value ='Instructor'>Instructor</option>
+                </select>
+                </p>
                 <p><label for="add-email">Phone Number:</label>
                 <input type="text" id="add-phone" name="phone"></p>
-                <p><label for="add-bnumber">BNumber:</label>
-                <input type="text" id="add-bnumber" name="bnumber"></p>
-                <p><input type="submit" value="Submit Changes"></p>
+                
+                <p><input type="submit" value="Create Account"></p>
             </form>
             </div>
         {% endblock %}
