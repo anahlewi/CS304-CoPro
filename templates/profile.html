@@ -6,17 +6,6 @@
 
         {% block content %}
         <div class="content">
-
-           <!--{% with messages = get_flashed_messages() %}-->
-           <!--     {% if messages %}-->
-           <!--         <div id="messages">-->
-           <!--         {% for msg in messages %}-->
-           <!--             <p>{{msg}}</p>-->
-           <!--         {% endfor %}-->
-           <!--         </div>-->
-           <!--     {% endif %}-->
-           <!--  {% endwith %}-->
-             
                 <!-- Display info about the user show reshall and avail if student -->
                 <h1 id="user-profile-heading">{{user.name}}</h1>
                  <div class="container-img">
@@ -68,7 +57,7 @@
                     </p>
                     <p>
                         <label for="edit-bnumber">BNUMBER:</label>
-                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" disabled>
+                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}">
                         <label for="edit-phone">Phone Number:</label>
                         <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
                     </p>
@@ -109,11 +98,6 @@
                     
                   
                 </form>
-                <!--<form method="POST" action="{{url_for('file_upload')}}" enctype="multipart/form-data">-->
-                <!--        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}" >-->
-                <!--         <input type="file" name="pic">-->
-
-                <!--</form>-->
             </div>
             
             

@@ -35,7 +35,12 @@
                                 <th>Title</th>
                                 <th>Due Date</th>
                                 <th>Max Size</th>
-                                <th>Group</th>
+                                {% if instructor %}
+                                    <th>Groups</th>
+                                {% else %}
+                                    <th>Group</th>
+                                {% endif%} 
+                                
                         </tr>
                         {% for pset in psets %}
                             <tr data-pid={{pset.pid}}>
@@ -46,7 +51,13 @@
                                 {% endif%}
                                 <td class="dueDate">{{pset.dueDate}}</td>
                                 <td class="size">{{pset.maxSize}}</td>
-                                <td class='group'>{{pset.groupNum}}</td>
+                                {% if instructor %}
+                                    <td class='groups'><a href="{{url_for('groupProf' ,courseNum = courseNum, pid= pset.pid)}}">View Groups</a></td>
+                                {% else %}
+                                    <td class='group'>
+                                        <a href = "{{url_for('group', courseNum = courseNum, pid = pset.pid, groupNum = pset.groupNum)}}">{{pset.groupNum}}</a>
+                                    </td>
+                                {% endif %}
                             </tr>
 
                         {% endfor %}

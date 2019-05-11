@@ -24,6 +24,11 @@ use c9;
 -- availability) values ('mhardy', 'password4', 'B20800001', 'Miranda Hardy', 
 -- 'mhardy@wellesley.edu', '098-765-4321', 'Student', 'Tower Court East', NULL);
 
+insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+availability) values ('Ana', 'password5', 'B20800043', 'Ana Carter', 
+'acarter@wellesley.edu', '098-765-4321', 'Student', 'Tower Court East', NULL);
+
+
 
 -- -- Courses
 -- insert into courses(courseNum, courseName, instructor, semester) 
@@ -63,6 +68,12 @@ use c9;
 -- insert into enrollment(bnumber, courseNum) values('B20800497', '13587');
 -- insert into enrollment(bnumber, courseNum) values('B20800000', '13587');
 -- insert into enrollment(bnumber, courseNum) values('B20800001', '13587');
+
+
+insert into enrollment(bnumber, courseNum) values('B20800497', '15773');
+insert into enrollment(bnumber, courseNum) values('B20800000', '15773');
+insert into enrollment(bnumber, courseNum) values('B20800001', '15773');
+insert into enrollment(bnumber, courseNum) values('B20800043', '15773');
 
 -- Groups (Can't test this for some referential integrity problem)
 insert into groups(groupNum, pid, courseNum) values 

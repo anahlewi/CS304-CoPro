@@ -87,12 +87,12 @@ def courses(conn):
     curs.execute('''select * from courses''')
     return curs.fetchall()
     
-def update(conn, name, email, phone, residence, avail):
+def update(conn, bnumber, username, email, phone, residence, avail):
     curs = conn.cursor()
     nr = curs.execute('''update users
-                    set name = %s, email = %s, phone = %s, resHall = %s, 
-                    availability =%s where email like %s''',
-                    [name, email, phone, residence, avail,email])
+                    set username = %s, email = %s, phone = %s, resHall = %s, 
+                    availability =%s where bnumber = %s''',
+                    [username, email, phone, residence, avail, bnumber])
     return nr
 
 def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
@@ -101,6 +101,11 @@ def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
     curs.execute('''insert into psets(pid, psetTitle, dueDate, maxSize,
     courseNum) values (%s, %s, %s, %s, %s)''', 
     [psetNum, psetTitle, dueDate, maxSize, courseNum])
+
+def addGroups(conn, bnumber, groupNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    nr = curs.execute('''insert into groups(groupNum, bnumber) values (%s, %s)''', [groupNum, bnumber])
+    return nr 
     
 def isInstructor(conn, bnumber):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
@@ -129,6 +134,39 @@ def addCourse(conn, courseNum, courseName, instructor, semester):
     curs.execute('''insert into courses(courseNum, courseName, instructor, 
     semester) values (%s, %s, %s, %s)''', 
     [courseNum, courseName, instructor, semester])
+   
+def groups(conn, courseNum, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select G.pid, G.groupNum from groups G 
+    where G.courseNum = %s and G.pid = %s''', [courseNum, pid])
+    return curs.fetchall()
+
+def numGroup(conn, courseNum, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select count(*) as numGroups from groups G 
+    where G.courseNum = %s and G.pid = %s''', [courseNum, pid])
+    return curs.fetchone()
+
+def psetGroup(conn, courseNum, pid, groupNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select U.name, U.email, U.phone, G.groupNum from groups G 
+    inner join courses as C 
+    inner join groupForPset as P 
+    inner join users as U 
+    on P.groupNum = G.groupNum and C.courseNum= G.courseNum and U.bnumber = P.bnumber 
+    where G.courseNum = %s and G.pid = %s and G.groupNum = %s''', 
+    [courseNum, pid, groupNum])
+    return curs.fetchall()
+    
+def allGroups(conn):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select * from groups''')
+    return curs.fetchall()
+    
+def match(conn, userResHall):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select * from users where users.resHall = %s''', [userResHall])
+    return curs.fetchall()
     
 if __name__ == '__main__':
     conn = getConn('c9')
@@ -136,5 +174,9 @@ if __name__ == '__main__':
     
     # print(profile(conn, 'alewi@wellesley.edu'))
     # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
-    print(roster(conn, 13587))
-    print(isInstructor(conn, 'B20800497'))
+    # print(roster(conn, 13587))
+    # print(isInstructor(conn, 'B20800497'))
+    
+    # print(psetGroup(conn,13587, 1, 16 ))
+    # print(numGroup(conn,13587, 1))
+    # print(groups(conn,13587, 1))
