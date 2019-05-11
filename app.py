@@ -1,15 +1,12 @@
 import json
 import queries 
-from flask import (Flask, url_for, redirect, session, render_template, request, flash, send_from_directory, Response)
+from flask import (Flask, url_for, redirect, session, render_template, request, flash, send_from_directory, Response, jsonify)
 from werkzeug import secure_filename
 import random, math
+import matching
 from datetime import datetime
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
-
-
-
-
 
 app = Flask(__name__)
 import sys, os, random
@@ -161,9 +158,9 @@ def courses(courseNum = None):
         
         psets = queries.getAssignments(conn, courseNum, bnumber)
         
-        return render_template('roster.html', course = course, 
+        return render_template('roster.html', course = course, courseNum = courseNum, 
                                 roster = roster, psets = psets, 
-                                instructor = instructor)
+                                logged_in = session['logged_in'], instructor = instructor)
             
     else:
         courses = queries.courses(conn)
@@ -174,42 +171,22 @@ def courses(courseNum = None):
 @app.route('/update', methods =['POST'])
 def update():
     if session.get('logged_in'):
+        conn = queries.getConn('c9')
+        username = request.form.get('username')
+        print(username)
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        bnumber = request.form.get('bnumber')
+        residence = request.form.get('residence')
+        avail= request.form.get('availability')
+        print(avail)
         
-        if request.form['submit'] == 'Save Changes':
-            conn = queries.getConn('c9')
-            name = request.form.get('username')
-            email = request.form.get('email')
-            phone = request.form.get('phone')
-            bnumber = request.form.get('bnumber')
-            residence = request.form.get('residence')
-            avail= request.form.get('avail')
-        
-            try:
-                updated = queries.update(conn, name, email, phone, residence, avail)
-            except:
-                flash('Unable to Update info')
-            return redirect(url_for('profile'))
-        else:
-             try:
-                bnumber = request.form['bnumber'] # may throw error
-                f = request.files['pic']
-                mime_type = imghdr.what(f)
-                if mime_type.lower() not in ['jpeg','gif','png', 'jpg']:
-                    raise Exception('Not a JPEG, GIF, JPG or PNG: {}'.format(mime_type))
-                filename = secure_filename('{}.{}'.format(bnumber,mime_type))
-                pathname = os.path.join(app.config['UPLOADS'],filename)
-                f.save(pathname)
-                flash('Upload successful')
-                conn = queries.getConn('c9')
-                curs = conn.cursor()
-                curs.execute('''insert into picfile(bnumber,filename) values (%s,%s)
-                            on duplicate key update filename = %s''',
-                         [bnumber, filename, filename])
-                return redirect(url_for('profile'))
-             except Exception as err:
-                flash('Upload failed {why}'.format(why=err))
-                return redirect(url_for('profile')) 
-            
+        try:
+            updated = queries.update(conn, bnumber, username, email, phone, residence, avail)
+            print(updated)
+        except:
+            flash('Unable to Update info')
+        return redirect(url_for('profile'))
     else:
         return redirect(request.referrer)
 
@@ -228,12 +205,38 @@ def home():
 def api_addexpense():
     req = request.get_json()
     return req
+    
+    
+@app.route('/availabilityAjax/', methods=['GET'])
+def availabilityAjax():
+    availability = request.args.get('availability')
+    bnumber = request.args.get('bnumber')
+    try:
+        conn = queries.getConn('c9')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        numrows = curs.execute('''update users set availability = %s
+                    where bnumber = %s''', [availability, bnumber])
+        return jsonify( {'error': False, 'availability': availability, 'bnumber': bnumber} )
+    except Exception as err:
+        return jsonify( {'error': True, 'err': str(err) } )
 
-@app.route('/assignments', methods = ['GET'])
-# # @login_required
-def assignments():
-    return redirect()
 
+
+@app.route('/algorithmAjax', methods=['POST'])
+def match():
+    courseNum = request.args.get('courseNum')
+    
+    try:
+        conn = queries.getConn('c9')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        roster = queries.roster(conn, courseNum)
+        allGroups = queries.allGroups(conn)
+        groupNum = matching.groupNum(allGroups)
+        check = curs.execute('''insert into groups(groupNum, pid, courseNum)
+        values(%s, %s, %s)''',[groupNum, pid])
+    except Exception as err:
+        return jsonify( {'error': True, 'err': str(err) } )
+        
 
 
 @app.route('/pic/<bnumber>')
@@ -258,32 +261,52 @@ def pics():
     pics = curs.fetchall()
     return render_template('all_pics.html',pics=pics)
 
-@app.route('/upload/', methods=["POST"])
+
+@app.route('/course/<courseNum>/group/<pid>/<groupNum>', methods=['GET'])
+def group(courseNum, groupNum, pid):
+    conn = queries.getConn('c9')
+    course = queries.findCourse(conn, courseNum)
+    group = queries.groups(conn, courseNum, pid)
+    return render_template('groups.html', course = course,
+    groupNum = groupNum, group = group, logged_in = session['logged_in'])
+
+
+@app.route('/course/<courseNum>/groups/<pid>', methods=['GET'])
+def groupProf(courseNum, pid):
+    conn = queries.getConn('c9')
+    course = queries.findCourse(conn, courseNum)
+    groups = queries.groups(conn, courseNum, pid)
+    numGroups = queries.numGroup(conn, courseNum, pid)
+    return render_template('groupProf.html', course = course, courseNum = courseNum,
+    numGroups = numGroups['numGroups'], groups = groups, logged_in = session['logged_in'])
+    
+    
+@app.route('/uploadAjax/', methods=["POST"])
 def file_upload():
     try:
-        bnumber = request.form['bnumber'] # may throw error
+        bnumber = request.form.get('bnumber')
+        print(bnumber)# may throw error
         f = request.files['pic']
+        print(f)
         mime_type = imghdr.what(f)
+        print(mime_type)
         if mime_type.lower() not in ['jpeg','gif','png']:
             raise Exception('Not a JPEG, GIF or PNG: {}'.format(mime_type))
         filename = secure_filename('{}.{}'.format(bnumber,mime_type))
         pathname = os.path.join(app.config['UPLOADS'],filename)
         f.save(pathname)
-        flash('Upload successful')
         conn = queries.getConn('c9')
         curs = conn.cursor()
         curs.execute('''insert into picfile(bnumber,filename) values (%s,%s)
                             on duplicate key update filename = %s''',
                          [bnumber, filename, filename])
-        return redirect(url_for('profile'))
+        return jsonify( {'error': False, 'image':filename} )
     except Exception as err:
-        flash('Upload failed {why}'.format(why=err))
-        return redirect(url_for('profile')) 
+        return jsonify( {'error': True, 'err': err})
+        
 
-
-@app.route('/newAssignment', methods=['GET','POST'])      
+@app.route('/newAssignment', methods=['GET','POST'])
 def newAssignment():
-    
     if request.method == 'GET':
         return render_template('assignment.html')
     else:
@@ -298,7 +321,7 @@ def newAssignment():
             try:
                 psetNum = int(psetNum)
             except:
-                flash('Invalid input: Please inser')
+                flash('Invalid input: Please insert')
         else:
             flash('Missing input: Assignment Number is missing')
         if not dueDate:

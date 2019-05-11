@@ -6,9 +6,7 @@
           href="{{ url_for('static', filename = 'style.css') }}">
     </head>
     <body>
-        {% extends "base.html" %}
-        {% block content %}
-        <div class="assignments content">
+        <div class=" content">
         	<form method=POST action="{{url_for('newAssignment')}}">
 
                 <fieldset> <!--group related elements and draw a box around those elements-->
@@ -22,6 +20,7 @@
                     <td><input type="date" name="dueDate" id="dueDate"></td></tr>
                 <tr><td><label for="maxSize" accesskey="s">(4) Max Group Size:</label></td>
                     <td><input type="number" name="maxSize" id="maxSize"></td></tr>
+               
                 </table>
                 </fieldset>
             
@@ -29,9 +28,12 @@
         
         
             </form>
-        	
+        	<form>
+        	     <tr><td><label for="pdf" accesskey="p">(p) Uplaod Assignment:</label></td>
+                    <td><input type="file" name="assign-pdf" id="assign-pdf"></td></tr>
+                    <input type='submit' value='Upload Assignment'>
+        	</form>
         </div>
-        {% endblock %}
     </body>
     
 </html>

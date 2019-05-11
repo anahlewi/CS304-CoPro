@@ -17,7 +17,6 @@
             <li class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
             <li class="nav_li"><a class= "" href="{{url_for('profile')}}">Profile</a></li>
             <li class="nav_li"><a class= ""  href="{{url_for('courses')}}">Courses</a></li>
-            <!--<li class="nav_li"><a class= "" href="{{url_for('assignments')}}">Assignments</a></li>-->
             {% if logged_in %}
              <li class="nav_li"><a class= "logout" href="{{url_for('logout')}}">Logout</a></li>
             {% endif %}
@@ -37,14 +36,6 @@
             
             <div class="content" style="width:45%;">
 
-            <!--<form method="POST" action="{{url_for('flaskLogin')}}" class="login-form">-->
-            <!--    <label for="username-email">Username or Email:</label>-->
-            <!--    <input type="text" name="username-email"/>-->
-            <!--    <label for="password">Password:</label>-->
-            <!--    <input type="password" name="password" />-->
-            <!--    <input type="submit" name="submit"/>-->
-            <!--</form>-->
-            <!-- Login Form -->
             <h1 style="text-align:center;">CoPro</h1>
             <form method="POST" action="{{url_for('flaskLogin')}}">
               <input type="text" id="login" class="fadeIn second" name="username-email" placeholder="login">
@@ -56,10 +47,7 @@
               <span class="icon"></span>
               <span class="buttonText">Google</span>
             </div>
-            <!-- Remind Passowrd -->
-            <!--<div id="formFooter">-->
-            <!--  <a class="underlineHover" href="#">Forgot Password?</a>-->
-            <!--</div>-->
+          
              <a href="{{url}}">Login</a>
              </div>
             {% endblock %}
