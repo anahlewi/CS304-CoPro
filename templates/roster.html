@@ -23,6 +23,17 @@
                 </tr>
                 {% endfor %}
             </table>
+                {% if instructor %}
+                <form action="{{url_for('updateRoster')}}" method ="POST"> 
+                    <input style="display:none;" name='courseNum' value ='{{course.courseNum}}'>
+                    <select name="students">
+                        {% for student in students %}
+                        <option value="{{student.bnumber}}">{{student.name}}</option>
+                        {% endfor %}
+                    </select>
+                    <input type="submit" value="Add new student">
+                </form>
+            {% endif %}
         <div class = "assignments">    
             <h2><b>Assignments</b></h2>
             

@@ -181,7 +181,7 @@ def newUser():
 @app.route('/courses')
 def courses(courseNum = None):
     '''Display courses student is in enrolled in or courses professor teaches'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         conn = queries.getConn('c9')
         bnumber = session.get('bnumber')
         instructor = queries.isInstructor(conn, bnumber)
@@ -189,11 +189,11 @@ def courses(courseNum = None):
             course = queries.findCourse(conn, courseNum)
             roster = queries.roster(conn, courseNum)
             session['courseNum'] = courseNum
-            
+            students = queries.allStudents(conn)
             psets = queries.getAssignments(conn, courseNum, bnumber)
             
             return render_template('roster.html', course = course, courseNum = courseNum, 
-                                    roster = roster, psets = psets, 
+                                    roster = roster, psets = psets, students = students,
                                     logged_in = session['logged_in'], instructor = instructor)
                 
         else:
@@ -205,8 +205,18 @@ def courses(courseNum = None):
             logged_in = session['logged_in'], instructor=instructor)
     else:
         flash('Need to login to access page')
-        return (request.referrer)
-
+        return index()
+        
+@app.route('/updateRoster', methods=['POST'])
+def updateRoster():
+    conn = queries.getConn('c9')
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    
+    bnumber = request.form.get('students')
+    courseNum = request.form.get('courseNum')
+    curs.execute('''insert into enrollment(bnumber, courseNum)
+                values(%s, %s)''',[bnumber, courseNum])
+    return redirect(request.referrer)
     
 @app.route('/update', methods =['POST'])
 def update():
@@ -253,6 +263,8 @@ def availabilityAjax():
         curs = conn.cursor(MySQLdb.cursors.DictCursor)
         numrows = curs.execute('''update users set availability = %s
                     where bnumber = %s''', [availability, bnumber])
+                    
+        
         return jsonify( {'error': False, 'availability': availability, 'bnumber': bnumber} )
     except Exception as err:
         return jsonify( {'error': True, 'err': str(err) } )
@@ -284,8 +296,8 @@ def match():
             if matches[match]:
                 curs.execute('''insert into groupForPset(groupNum, bnumber)
                 values(%s, %s)''',[groupNum, matches[match]])
-        
-        return jsonify( {'error': False, 'match': matches })
+        jsonify( {'error': False, 'match': matches })
+        return redirect(request.referrer)
     except Exception as err:
         return jsonify( {'error': True, 'err': str(err) } )
 
@@ -293,7 +305,7 @@ def match():
 @app.route('/pic/<bnumber>')
 def pic(bnumber):
     '''URL that displays images of users from uploads folder'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         conn = queries.getConn('c9')
         curs = conn.cursor(MySQLdb.cursors.DictCursor)
         numrows = curs.execute('''select bnumber,filename from users inner join picfile using (bnumber)
@@ -311,7 +323,7 @@ def pic(bnumber):
 @app.route('/course/<courseNum>/group/<pid>/<groupNum>', methods=['GET'])
 def group(courseNum, groupNum, pid):
     '''Returns group page for student users'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         conn = queries.getConn('c9')
         course = queries.findCourse(conn, courseNum)
         group = queries.psetGroup(conn, courseNum, pid, groupNum)
@@ -326,7 +338,7 @@ def group(courseNum, groupNum, pid):
 @app.route('/course/<courseNum>/groups/<pid>', methods=['GET'])
 def groupProf(courseNum, pid):
     '''Returns group page for users that are professors'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         conn = queries.getConn('c9')
         course = queries.findCourse(conn, courseNum)
         groups = queries.groups(conn, courseNum, pid)
@@ -365,7 +377,7 @@ def file_upload():
 @app.route('/newAssignment', methods=['GET','POST'])
 def newAssignment():
     '''Allows professor to add a new assignment to the database'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         if request.method == 'GET':
             return render_template('assignment.html')
         else:
@@ -410,7 +422,7 @@ def newAssignment():
 @app.route('/update/<pid>', methods = ['GET', 'POST'])
 def deleteAssignment(pid):
     '''Allows professor to deleta assignment and will update database accordingly'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         conn = queries.getConn('c9')
         courseNum = session.get('courseNum')
         bnumber = session.get('bnumber')
@@ -437,7 +449,7 @@ def deleteAssignment(pid):
 @app.route('/newCourse', methods=['GET', 'POST'])
 def newCourse():
     '''Allows professors to add new course to database and will be displayed on courses page'''
-    if session['logged_in']:
+    if session.get('logged_in'):
         bnumber = session.get('bnumber')
         if request.method == 'GET':
             return render_template('newCourse.html', bnumber = bnumber)

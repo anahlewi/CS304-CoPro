@@ -27,7 +27,7 @@
 <script>
     var URL = "{{url_for('match')}}"
     
-    $('#match').click(function(e){
+    $('#match').click(function(){
         console.log( {{courseNum}} );
         $.get(URL,{'courseNum': {{courseNum}}, 'pid': {{pid}} }, function(data){
             console.log(data);

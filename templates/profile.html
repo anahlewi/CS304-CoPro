@@ -40,6 +40,8 @@
                 </table>
                 {%if currentUser %} 
                     <button id="edit-form-btn">Edit Profile</button>
+                {%else%}
+                    <button id="connect">Connect</button>
                 {% endif %}
 
                 <form id="edit-profile-form" method="POST" style="display:none;" enctype="multipart/form-data"  action="{{url_for('update')}}">
@@ -148,7 +150,7 @@
                       success:function(data){
                           console.log(data);
                           console.log("upload success");
-                          $('profile-img').attr("src", "{{url_for('pic', bnumber=" + bnumber + ")}}")
+                          $('#profile-img').attr("src", "{{url_for('pic', bnumber=" + bnumber + ")}}");
                       }
                   });
 

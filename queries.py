@@ -91,7 +91,12 @@ def coursesStudent(conn, bnumber):
     inner join enrollment as E on C.courseNum = E.courseNum 
     where E.bnumber = %s''', [bnumber])
     return curs.fetchall()
-
+    
+def allStudents(conn):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from users where users.userType = 'student' ''')
+    return curs.fetchall()
+    
 def courses(conn, bnumber):
     '''Returns all courses lead by a particular instructor/or a student is enrolled'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
@@ -195,7 +200,7 @@ def usernameTaken(conn, username):
 if __name__ == '__main__':
     conn = getConn('c9')
     
-    
+    print(allStudents(conn))
     # print(profile(conn, 'alewi@wellesley.edu'))
     # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
     # print(roster(conn, 13587))

@@ -12,10 +12,11 @@
     <body>
         {%block navabar%}
         <ul class= "navbar">
+            <img style='margin-left: -11%;' src="{{url_for('static', filename = 'images/logo.png')}}" width="175px" height="140px">
             {% if logged_in %}
-            <li class="nav_li"><a class= "" href="{{url_for('dashboard')}}">Dashboard</a></li>
+            <li style="margin-top: -20%;"class="nav_li"><a class= "" href="{{url_for('dashboard')}}">Dashboard</a></li>
             {%else%}
-             <li class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
+             <li style="margin-top: -20%;" class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
             {% endif %}
            
             <li class="nav_li"><a class= "" href="{{url_for('profile')}}">Profile</a></li>
@@ -30,14 +31,16 @@
                 {% if messages %}
                     <div id="messages" style="margin-left:45%;">
                     {% for msg in messages %}
-                        {{msg}}
+                        <span>{{msg}}</span>
                     {% endfor %}
                     </div>
                 {% endif %}
              {% endwith %}
+             
+             
             {% block content %}
             
-            <div class="content" style="width:45%;">
+            <div class="content" style="margin-left:25%;">
          
                 <h1 style="text-align:center;">CoPro</h1>
                 <form method="POST" action="{{url_for('flaskLogin')}}">
@@ -46,12 +49,9 @@
                   <input type="submit"value="Log In">
     
                 </form>
-                <div id="customBtn" class="customGPlusSignIn">
-                  <span class="icon"></span>
-                  <span class="buttonText">Google</span>
-                </div>
-              
-                 <a href="{{url}}">Login</a>
+                <a href="{{url_for('newUser')}}">Sign Up Here</a>
+                <br>
+                 <a href="{{url}}"> Google Login</a>
                  
              </div>
             {% endblock %}
