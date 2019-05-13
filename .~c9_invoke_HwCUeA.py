@@ -80,26 +80,17 @@ def getAssignments(conn, courseNum, bnumber):
     return curs.fetchall()
 
 def findCourse(conn, courseNum):
-    '''Returns all the information for a given course'''
+    '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from courses where courseNum = %s''', [courseNum])
     return curs.fetchone()
-
-def coursesStudent(conn, bnumber):
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from courses C
-    inner join enrollment as E on C.courseNum = E.courseNum 
-    where E.bnumber = %s''', [bnumber])
-    return curs.fetchall()
-
+    
 def courses(conn, bnumber):
-    '''Returns all courses lead by a particular instructor/or a student is enrolled'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from courses where instructor = %s''', [bnumber])
     return curs.fetchall()
     
 def update(conn, bnumber, username, email, phone, residence, avail):
-    '''Updates a user's profile'''
     curs = conn.cursor()
     nr = curs.execute('''update users
                     set username = %s, email = %s, phone = %s, resHall = %s, 
@@ -108,20 +99,18 @@ def update(conn, bnumber, username, email, phone, residence, avail):
     return nr
 
 def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
-    '''Insert an assignment into the pset table'''
+    print('Enter Add Assignment')
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''insert into psets(pid, psetTitle, dueDate, maxSize,
     courseNum) values (%s, %s, %s, %s, %s)''', 
     [psetNum, psetTitle, dueDate, maxSize, courseNum])
 
 def addGroups(conn, bnumber, groupNum):
-    '''Insert a person to a group'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     nr = curs.execute('''insert into groups(groupNum, bnumber) values (%s, %s)''', [groupNum, bnumber])
     return nr 
     
 def isInstructor(conn, bnumber):
-    '''Checks to see if the user is an instructor or student'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select userType from users where bnumber = %s''', [bnumber])
     dct = curs.fetchone()
@@ -129,7 +118,6 @@ def isInstructor(conn, bnumber):
     
     
 def getAssignment(conn, pid):
-    '''Returns a particular pset with a given pid'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from psets where pid = %s''', [pid])
     return curs.fetchone()
@@ -141,12 +129,10 @@ def updatePsets(conn, pid, psetTitle, dueDate, maxSize, courseNum):
                     [pid, psetTitle, dueDate, maxSize, courseNum, pid])
     
 def deleteAssignment(conn, pid):
-    '''Deletes a pset from the pset table'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''delete from psets where pid=%s''', [pid])
     
 def addCourse(conn, courseNum, courseName, instructor, semester):
-    '''Insert a new course into the courses table'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''insert into courses(courseNum, courseName, instructor, 
     semester) values (%s, %s, %s, %s)''', 
@@ -176,19 +162,17 @@ def psetGroup(conn, courseNum, pid, groupNum):
     return curs.fetchall()
     
 def allGroups(conn):
-    '''Returns all the groups form for all psets'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute(''' select * from groups''')
     return curs.fetchall()
     
 def match(conn, userResHall):
-    '''Returns all users who reside in a particular reshall'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute(''' select * from users where users.resHall = %s''', [userResHall])
     return curs.fetchall()
 
 def usernameTaken(conn, username):
-    '''Checks to see if a username is taken'''
+    ''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select username from users where username = %s''', [username])
     return curs.fetchone()

@@ -1,28 +1,38 @@
 import json
 import queries 
-from flask import (Flask, url_for, redirect, session, render_template, request, flash)
+from flask import (Flask, url_for, redirect, session, render_template, request, flash, send_from_directory, Response, jsonify)
+from werkzeug import secure_filename
 import random, math
+import matching
+from datetime import datetime
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
+import bcrypt
+
 
 app = Flask(__name__)
+import sys, os, random
+import imghdr
+import MySQLdb
 
+
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+app.config['UPLOADS'] = 'uploads'
 
 app.config.update(
     SECRET_KEY='AIzaSyBbtqYZB9aGi4sPmzbKKJvpV2EpcwDY47g',
     GOOGLE_LOGIN_CLIENT_ID='137996221652-06lt05ueh81jt9rtse06idsdgggmoda5.apps.googleusercontent.com',
     GOOGLE_LOGIN_CLIENT_SECRET='lWDlIeZukzElBCdrnhidGoNR',
-    GOOGLE_LOGIN_REDIRECT_URI='http://mysql-workshop-alewi.c9users.io:8081/oauth2callback',
+    GOOGLE_LOGIN_REDIRECT_URI='http://mysql-workshop-alewi.c9users.io:8082/oauth2callback',
     GOOGLE_LOGIN_SCOPES='https://www.googleapis.com/auth/userinfo.email')
 
 googlelogin = GoogleLogin(app)
 
 users = {}
-                         
-#url build so that the user comes first then build off ie mhardy2/course/assignments
 
-#user class for each user session 
+#User Class used for the GOOGLE Authentication part of application
 class User(UserMixin):
+    '''user class for each user session '''
     def __init__(self, userinfo):
         self.id = userinfo['id']
         self.name = userinfo['name']
@@ -30,77 +40,197 @@ class User(UserMixin):
         self.email = userinfo.get('email')
 
 
+#grabs user informaton from google 
 @googlelogin.user_loader
 def get_user(userid):
+    '''Returns a userid'''
     return users.get(userid)
-#connects to google auth -- third party login 
+
+
+#google authentication callback uses keys and google api cloud information to login with google 
 @app.route('/oauth2callback')
 @googlelogin.oauth2callback
 def login(token, userinfo, **params):
+    '''connects to google auth -- third party login '''
     user = users[userinfo['id']] = User(userinfo)
     login_user(user)
     #uses google token and extra info in session 
-    session['token'] = json.dumps(token)
-    session['extra'] = params.get('extra')
+    session['logged_in'] =  True
+    
     conn = queries.getConn('c9')
-    search = queries.profile(conn, user.name)
+    search = queries.google_login(conn, user.email)
+    session['username'] = search['username']
     if search:
-        return redirect(params.get('next', url_for('profile')))
+        return redirect(url_for('profile'))
+        
     else:
         return redirect(params.get('next', url_for('newUser')))
+        
 
-#allows user to logout for testing purpose --> more sophisticated login will be created    
+#allows user to logout and will redirect to homepage
 @app.route('/logout')
 def logout():
     logout_user()
     session.clear()
-    return """
-        <p>Logged out</p>
-        <p><a href="/">Return to /</a></p>
-        """
+    return index()
 
+#index page will only be displayed if a user is logged in 
 @app.route('/')
 def index():
-    return 'Hello world'
-
-#profile page can only be accessed once you have logged in 
-@app.route('/profile')
-@login_required
-def profile():
+    '''Returns template for dashboard if user is logged in'''
+    try:
+        if session['logged_in']:
+            return dashboard()
+    except:
+        '''Returns the template for the login page'''
+        googleUrl =  googlelogin.login_url(approval_prompt='force')
+        return render_template('base.html', url = googleUrl)
+        
+        
+        
+@app.route('/dashboard')
+def dashboard():
+    '''Returns dashboard template'''
+    if session['logged_in']:
+        return render_template('dashboard.html', name = session['name'], logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return(request.referrer)
+    
+    
+#originally only created a google login page     
+@app.route('/manualLogin', methods = ['POST'])
+def flaskLogin():
+    '''Manual login for users who are already signed up'''
     conn = queries.getConn('c9')
-    userInfo = queries.profile(conn, current_user.name)
-    return render_template('profile.html', user=userInfo)
+    check = ''
+    pwrd = request.form['password']
+    print(pwrd)
+    if '@' in request.form['username-email']:
+        email = request.form['username-email']
+        check = queries.emailLogin(conn, email, pwrd) 
+    else:
+        username =  request.form['username-email']
+        check = queries.nameLogin(conn, username, pwrd)
+    if not check:
+       flash('Incorrect username or password')
+       return redirect(request.referrer)
+    session['logged_in'] =  True
+    session['bnumber'] = check['bnumber']   
+    session['username'] = check['username']
+    session['name'] = check['name']
+    return redirect(url_for('profile', bnumber = session['bnumber']))
 
+
+#Profile page allows user to access their information and other students information
+@app.route('/profile')   
+@app.route('/profile/')  
+@app.route('/profile/<bnumber>')
+def profile(bnumber = None):
+    '''Renders a user's profile and allow users to access other student's profile'''
+    conn = queries.getConn('c9')
+    if session.get('logged_in'):
+        if bnumber:
+            
+            userInfo = queries.profile(conn, bnumber)
+        else:
+            '''if no bnumber is given redirect to current users information
+            redirect if users input URL /profile or /profile/ --> no bnumber given '''
+            return redirect(url_for('profile', bnumber = session['bnumber']))
+    else:
+        flash('Need to login to access page')
+        return index()
+    if bnumber == session['bnumber']:
+        currentUser = True
+    else:
+        currentUser = False 
+    return render_template('profile.html', user=userInfo, currentUser = currentUser, logged_in = session['logged_in'])
+    
+    
 #will be redirected to this url when your name is not in database
 @app.route('/newUser', methods = ['GET','POST'])
-@login_required
 def newUser():
-    conn = queries.getConn('c9')
-    if request.method == 'POST':
+    '''Returns a template for user sign up if the user is not found in the database'''
+    if request.method == 'GET':
+        return render_template('newUser.html')
+    else:
+        conn = queries.getConn('c9')
+        username = request.form.get('username')
+        password = request.form.get('password1')
+        password2 = request.form.get('password2')
         name = request.form.get('name')
         email = request.form.get('email')
         phone = request.form.get('phone')
         bnumber = request.form.get('bnumber')
-        if len(bnumber) == 0:
-            flash('enter a bnumber')
+        userType = request.form.get('userType')
+        print('queries', queries.usernameTaken(conn, username))
+        if queries.usernameTaken(conn, username):
+            flash('Username taken. Enter a new username')
+            return render_template('newUser.html')
+        if password != password2:
+            flash('Passwords do not match')
+            return render_template('newUser.html')
+        # hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        if (username and password and name and email and phone and bnumber 
+        and userType):
+            queries.addUser(conn, username, password, bnumber, name, email, phone,
+            userType)
+            return redirect(url_for('profile'))
+
+@app.route('/courses/<courseNum>')
+@app.route('/courses')
+def courses(courseNum = None):
+    '''Display courses student is in enrolled in or courses professor teaches'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        bnumber = session.get('bnumber')
+        instructor = queries.isInstructor(conn, bnumber)
+        if courseNum:
+            course = queries.findCourse(conn, courseNum)
+            roster = queries.roster(conn, courseNum)
+            session['courseNum'] = courseNum
+            
+            psets = queries.getAssignments(conn, courseNum, bnumber)
+            
+            return render_template('roster.html', course = course, courseNum = courseNum, 
+                                    roster = roster, psets = psets, 
+                                    logged_in = session['logged_in'], instructor = instructor)
+                
         else:
-            queries.addUser(conn, bnumber, name, email, phone)
-            return redirect(url_for('profile', name))
-        
+            if instructor:
+                courses = queries.courses(conn, bnumber)
+            else:
+                courses = queries.coursesStudent(conn, bnumber)
+            return render_template('courses.html', courses = courses, 
+            logged_in = session['logged_in'], instructor=instructor)
     else:
-        name = current_user.name 
-        email = current_user.email 
-        return render_template('newUser.html', name = name, email = email)
+        flash('Need to login to access page')
+        return (request.referrer)
 
+    
+@app.route('/update', methods =['POST'])
+def update():
+    '''Updates information about current_user'''
+    if session.get('logged_in'):
+        conn = queries.getConn('c9')
+        username = request.form.get('username')
+        print(username)
+        email = request.form.get('email')
+        phone = request.form.get('phone')
+        bnumber = request.form.get('bnumber')
+        residence = request.form.get('residence')
+        avail= request.form.get('availability')
+        print(avail)
+        
+        try:
+            updated = queries.update(conn, bnumber, username, email, phone, residence, avail)
+            print(updated)
+        except:
+            flash('Unable to Update info')
+        return redirect(url_for('profile'))
+    else:
+        return redirect(request.referrer)
 
-@app.route('/home')
-@login_required
-def home():
-    return """
-        <p>Hello, %s</p>
-        <p><img src="%s" width="100" height="100"></p>
-        <p><a href="/logout">Logout</a></p>
-        """ % (current_user.name, current_user.picture)
 
 
 @app.route('/api/addexpense')
@@ -108,22 +238,270 @@ def home():
 def api_addexpense():
     req = request.get_json()
     return req
+    
+    
+@app.route('/availabilityAjax/', methods=['GET'])
+def availabilityAjax():
+    '''Waits for changes in availability section to update in the database
+        AUTOSAVE FEATURE    
+    '''
+    
+    availability = request.args.get('availability')
+    bnumber = request.args.get('bnumber')
+    try:
+        conn = queries.getConn('c9')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        numrows = curs.execute('''update users set availability = %s
+                    where bnumber = %s''', [availability, bnumber])
+        return jsonify( {'error': False, 'availability': availability, 'bnumber': bnumber} )
+    except Exception as err:
+        return jsonify( {'error': True, 'err': str(err) } )
 
+
+
+@app.route('/algorithmAjax', methods=['GET'])
+def match():
     
-@app.route('/courses')
-@login_required
-def courses():
-    return render_template('courses.html')
+    '''CRUX OF APPLICATION
+        Not a sophisticated algorithm but matches students in the roster
+    '''
+    courseNum = request.args.get('courseNum')
+    pid = request.args.get('pid')
+    try:
+        conn = queries.getConn('c9')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        roster = queries.roster(conn, courseNum)
+        matches = matching.match(roster)
+        for match in matches:
+            
+            allGroups = queries.allGroups(conn)
+            groupNum = matching.groupNum(allGroups)
+            check = curs.execute('''insert into groups(groupNum, pid, courseNum)
+            values(%s, %s, %s)''',[groupNum, pid, courseNum])
+            curs.execute('''insert into groupForPset(groupNum, bnumber)
+            values(%s, %s)''',[groupNum, match])
+        
+            if matches[match]:
+                curs.execute('''insert into groupForPset(groupNum, bnumber)
+                values(%s, %s)''',[groupNum, matches[match]])
+        
+        return jsonify( {'error': False, 'match': matches })
+    except Exception as err:
+        return jsonify( {'error': True, 'err': str(err) } )
+
+
+@app.route('/pic/<bnumber>')
+def pic(bnumber):
+    '''URL that displays images of users from uploads folder'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        numrows = curs.execute('''select bnumber,filename from users inner join picfile using (bnumber)
+                        where bnumber = %s''', [bnumber])
+        if numrows == 0:
+            flash('No picture for {}'.format(bnumber))
+            return redirect(url_for('profile'))
+        row = curs.fetchone()
+        val = send_from_directory(app.config['UPLOADS'],row['filename'])
+        return val
+    else:
+        flash('Need to login to access page')
+        return index()
+
+@app.route('/course/<courseNum>/group/<pid>/<groupNum>', methods=['GET'])
+def group(courseNum, groupNum, pid):
+    '''Returns group page for student users'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        course = queries.findCourse(conn, courseNum)
+        group = queries.psetGroup(conn, courseNum, pid, groupNum)
     
-@app.route('/assignments')
-@login_required
-def assignments():
-    return render_template('assignments.html')
+        return render_template('groups.html', course = course,
+        groupNum = groupNum, group = group, logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return index()
+
+
+@app.route('/course/<courseNum>/groups/<pid>', methods=['GET'])
+def groupProf(courseNum, pid):
+    '''Returns group page for users that are professors'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        course = queries.findCourse(conn, courseNum)
+        groups = queries.groups(conn, courseNum, pid)
+        numGroups = queries.numGroup(conn, courseNum, pid)
+        return render_template('groupProf.html', course = course, courseNum = courseNum, pid = pid,
+        numGroups = numGroups['numGroups'], groups = groups, logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return index()
+    
+@app.route('/uploadAjax/', methods=["POST"])
+def file_upload():
+    '''Image upload that uses AJAX to upload image into picfile database'''
+    try:
+        bnumber = request.form.get('bnumber')
+        print(bnumber)# may throw error
+        f = request.files['pic']
+        print(f)
+        mime_type = imghdr.what(f)
+        print(mime_type)
+        if mime_type.lower() not in ['jpeg','gif','png']:
+            raise Exception('Not a JPEG, GIF or PNG: {}'.format(mime_type))
+        filename = secure_filename('{}.{}'.format(bnumber,mime_type))
+        pathname = os.path.join(app.config['UPLOADS'],filename)
+        f.save(pathname)
+        conn = queries.getConn('c9')
+        curs = conn.cursor()
+        curs.execute('''insert into picfile(bnumber,filename) values (%s,%s)
+                            on duplicate key update filename = %s''',
+                         [bnumber, filename, filename])
+        return jsonify( {'error': False, 'image':filename} )
+    except Exception as err:
+        return jsonify( {'error': True, 'err': err})
+        
+
+@app.route('/newAssignment', methods=['GET','POST'])
+def newAssignment():
+    '''Allows professor to add a new assignment to the database'''
+    if session['logged_in']:
+        if request.method == 'GET':
+            return render_template('assignment.html')
+        else:
+            psetNum = request.form.get('psetNum')
+            psetTitle = request.form.get('psetTitle')
+            dueDate = request.form.get('dueDate').encode('utf-8')
+            maxSize = request.form.get('maxSize')
+            conn = queries.getConn('c9')
+            courseNum  = session.get('courseNum')
+            print('dueDate String', dueDate)
+            if psetNum:
+                try:
+                    psetNum = int(psetNum)
+                except:
+                    flash('Invalid input: Please insert')
+            else:
+                flash('Missing input: Assignment Number is missing')
+            if not dueDate:
+                flash('Missing input: Assignment Duedate is missing')
+            if not psetTitle:
+                flash('Missing input: Assignment Title is missing')
+            if maxSize:
+                try:
+                    maxSize = int(maxSize)
+                except:
+                    flash('Invalid input: Please insert an integer')
+                    
+            print('number', psetNum)
+            print('title', psetTitle)
+            print('dueDate', dueDate)
+            print('maxSize', maxSize)
+            if psetNum and psetTitle and dueDate and isinstance(maxSize, int):
+                queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
+                return redirect(url_for('courses', courseNum = courseNum))
+                
+            return render_template('assignment.html', logged_in = session['logged_in'])
+            
+    else:
+        flash('Need to login to access page')
+        return index()
+        
+@app.route('/update/<pid>', methods = ['GET', 'POST'])
+def deleteAssignment(pid):
+    '''Allows professor to deleta assignment and will update database accordingly'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        courseNum = session.get('courseNum')
+        bnumber = session.get('bnumber')
+        instructor = queries.isInstructor(conn, bnumber)
+        if request.method == 'GET':
+            info = queries.getAssignment(conn, pid)
+            return render_template('update.html', pset = info, courseNum = courseNum)
+        else:
+            if request.form.get('submit') == 'update':
+                newPid = request.form.get('pid')
+                psetTitle = request.form.get('psetTitle')
+                dueDate = request.form.get('dueDate')
+                maxSize = request.form.get('maxSize')
+                queries.updatePsets(conn, newPid, psetTitle, dueDate, maxSize, courseNum)
+                return redirect(url_for('courses', courseNum = courseNum, instructor = instructor))
+                
+            elif request.form.get('submit') == 'delete':
+                queries.deleteAssignment(conn, pid)
+        return redirect(url_for('courses', courseNum=courseNum, instructor=instructor))
+    else:
+        flash('Need to login to access page')
+        return index()
+
+@app.route('/newCourse', methods=['GET', 'POST'])
+def newCourse():
+    '''Allows professors to add new course to database and will be displayed on courses page'''
+    if session['logged_in']:
+        bnumber = session.get('bnumber')
+        if request.method == 'GET':
+            return render_template('newCourse.html', bnumber = bnumber)
+        else:
+            courseNum = request.form.get('courseNum')
+            courseName = request.form.get('courseName')
+            semester = request.form.get('semester')
+            if courseNum:
+                try:
+                    courseNum = int(courseNum)
+                except:
+                    flash('Invalid input: Please enter integer values')
+            else:
+                flash('Missing input: Course Number is missing')
+                
+            if not courseName:
+                flash('Missing input: Course Title is missing')
+            if not semester:
+                flash('Missing input: Semester is missing')
+                
+            if isinstance(courseNum, int) and courseName and semester:
+                conn = queries.getConn('c9')
+                queries.addCourse(conn, courseNum, courseName, bnumber, semester)
+                return redirect(url_for('courses'))
+        return render_template('newCourse.html', bnumber = bnumber, logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return index()
+    
+if __name__ == '__main__':
+    app.debug = True
+    app.run('0.0.0.0',8082)
+import queries 
+
+def match(roster):
+    matches = {}
+    listResHall = []
+    matched = set()
+    for person in roster:
+        listResHall.append(person['bnumber'])
+    while len(listResHall) != 0:
+        key = listResHall.pop()
+        try:
+            matches[key] = listResHall.pop()
+        except:
+            matches[key] = None
+    return matches
+
+
+
+def groupNum(groups):
+    result = []
+    for group in groups:
+        result.append(group['groupNum'])
+    return max(result)+1 
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run('0.0.0.0',8081)
+    conn = queries.getConn('c9')
+    roster = queries.roster(conn, 13587)
+    
+    groups = queries.allGroups(conn)
+    print(groupNum(groups))
+    print(match(roster))
 from __future__ import print_function
 import sys
 import MySQLdb
@@ -137,17 +515,37 @@ def getConn(db):
     conn.autocommit(True)
     return conn
     
-def profile(conn, name):
-    '''Returns the information to populate the profile page'''
+def profile(conn, bnumber):
+    '''Returns the information to populate the profile page using a bnumber'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where name like %s''',[name])
+    curs.execute('''select * from users where bnumber = %s''',[bnumber])
     return curs.fetchone()
 
-def addUser(conn, bnumber, name, email, phone):
+
+def emailLogin(conn, email, password):
+    '''Returns user information to process login with email/password login'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from users where email = %s and password = %s''',[email, password])
+    return curs.fetchone()
+
+def google_login(conn, email):
+    '''Returns a username to process google login with provided email address'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select username from users where email = %s ''',[email])
+    return curs.fetchone()
+    
+def nameLogin(conn, username, password):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from users where username = %s and password = %s''',[username, password])
+    return curs.fetchone()
+    
+
+def addUser(conn, username, password, bnumber, name, email, phone, userType):
     '''Adds new user to database'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''insert into users(bnumber, name, email, phone) 
-                         values (%s, %s, %s, %s)''',[bnumber, name, email, phone])
+    curs.execute('''insert into users(username, password, bnumber, name, email, 
+                    phone, userType) values (%s, %s, %s, %s, %s, %s, %s)''',
+                    [username, password, bnumber, name, email, phone, userType])
     
 def getBnumber(conn, username):
     '''Returns the student's bnumber'''
@@ -165,141 +563,357 @@ def dashboard(conn, bnumber):
 def roster(conn, courseNum):
     '''Returns all the students enrolled in a courses'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from enrollment where courseNum = %s''',[courseNum]) #complicated query tbd
+    curs.execute('''select * from enrollment E 
+    inner join users as U on E.bnumber = U.bnumber
+    where courseNum = %s ''',[courseNum]) #complicated query tbd
     return curs.fetchall()
 
-def getAssignments(conn, courseNum):
+def getAssignments(conn, courseNum, bnumber):
     '''Returns all the assignments from a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select psetNum, psetTitle, dueDate from courses where courseNum = %s''', [courseNum])
+    if isInstructor(conn, bnumber):
+        curs.execute('''select pid, psetTitle, dueDate, maxSize from psets 
+                    where courseNum = %s''', [courseNum])
+    else:
+        curs.execute('''select pid, psetTitle, dueDate, maxSize, groupNum from psets 
+                    inner join 
+                    (select groupNum, pid, courseNum from groups 
+                    inner join groupForPset using (groupNum)
+                    where bnumber = %s) as table2 using(pid) 
+                    where table2.courseNum = %s''', [bnumber, courseNum])
     return curs.fetchall()
+
+def findCourse(conn, courseNum):
+    '''Returns all the information for a given course'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from courses where courseNum = %s''', [courseNum])
+    return curs.fetchone()
+
+def coursesStudent(conn, bnumber):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from courses C
+    inner join enrollment as E on C.courseNum = E.courseNum 
+    where E.bnumber = %s''', [bnumber])
+    return curs.fetchall()
+
+def courses(conn, bnumber):
+    '''Returns all courses lead by a particular instructor/or a student is enrolled'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from courses where instructor = %s''', [bnumber])
+    return curs.fetchall()
+    
+def update(conn, bnumber, username, email, phone, residence, avail):
+    '''Updates a user's profile'''
+    curs = conn.cursor()
+    nr = curs.execute('''update users
+                    set username = %s, email = %s, phone = %s, resHall = %s, 
+                    availability =%s where bnumber = %s''',
+                    [username, email, phone, residence, avail, bnumber])
+    return nr
+
+def addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum):
+    '''Insert an assignment into the pset table'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into psets(pid, psetTitle, dueDate, maxSize,
+    courseNum) values (%s, %s, %s, %s, %s)''', 
+    [psetNum, psetTitle, dueDate, maxSize, courseNum])
+
+def addGroups(conn, bnumber, groupNum):
+    '''Insert a person to a group'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    nr = curs.execute('''insert into groups(groupNum, bnumber) values (%s, %s)''', [groupNum, bnumber])
+    return nr 
+    
+def isInstructor(conn, bnumber):
+    '''Checks to see if the user is an instructor or student'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select userType from users where bnumber = %s''', [bnumber])
+    dct = curs.fetchone()
+    return dct.get('userType') == 'Instructor'
+    
+    
+def getAssignment(conn, pid):
+    '''Returns a particular pset with a given pid'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from psets where pid = %s''', [pid])
+    return curs.fetchone()
+
+def updatePsets(conn, pid, psetTitle, dueDate, maxSize, courseNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''update psets set pid = %s, psetTitle = %s, dueDate = %s, 
+                    maxSize = %s, courseNum= %s where pid = %s''', 
+                    [pid, psetTitle, dueDate, maxSize, courseNum, pid])
+    
+def deleteAssignment(conn, pid):
+    '''Deletes a pset from the pset table'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''delete from psets where pid=%s''', [pid])
+    
+def addCourse(conn, courseNum, courseName, instructor, semester):
+    '''Insert a new course into the courses table'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''insert into courses(courseNum, courseName, instructor, 
+    semester) values (%s, %s, %s, %s)''', 
+    [courseNum, courseName, instructor, semester])
+   
+def groups(conn, courseNum, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select G.pid, G.groupNum from groups G 
+    where G.courseNum = %s and G.pid = %s''', [courseNum, pid])
+    return curs.fetchall()
+
+def numGroup(conn, courseNum, pid):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select count(*) as numGroups from groups G 
+    where G.courseNum = %s and G.pid = %s''', [courseNum, pid])
+    return curs.fetchone()
+
+def psetGroup(conn, courseNum, pid, groupNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select U.name, U.email, U.phone, G.groupNum from groups G 
+    inner join courses as C 
+    inner join groupForPset as P 
+    inner join users as U 
+    on P.groupNum = G.groupNum and C.courseNum= G.courseNum and U.bnumber = P.bnumber 
+    where G.courseNum = %s and G.pid = %s and G.groupNum = %s''', 
+    [courseNum, pid, groupNum])
+    return curs.fetchall()
+    
+def allGroups(conn):
+    '''Returns all the groups form for all psets'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select * from groups''')
+    return curs.fetchall()
+    
+def match(conn, userResHall):
+    '''Returns all users who reside in a particular reshall'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select * from users where users.resHall = %s''', [userResHall])
+    return curs.fetchall()
+
+def usernameTaken(conn, username):
+    '''Checks to see if a username is taken'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select username from users where username = %s''', [username])
+    return curs.fetchone()
 if __name__ == '__main__':
     conn = getConn('c9')
-    print(profile(conn, "Anah Lewi"))use c9;
-
-drop table if exists users;
-create table users(
-	username varchar(30),
-	bnumber varchar(9) NOT NULL,
-	name varchar(60),
-	email varchar(30),
-	phone varchar(10),
-	userType enum('Student', 'Instructor') NOT NULL, 
-	resHall varchar(30) NULL,
-	availability set('Monday Morning 8-12', 'Monday Afternoon 12-5', 
-	'Monday Night 7-11', 'Tuesday Morning 8-12', 'Tuesday Afternoon 12-5', 
-	'Tuesday Night 7-11', 'Wednesday Morning 8-12', 'Wednesday Afternoon 12-5', 
-	'Wednesday Night 7-11', 'Thursday Morning 8-12', 'Thursday Afternoon 12-5', 
-	'Thursday Night 7-11', 'Friday Morning 8-12', 'Friday Afternoon 12-5', 
-	'Friday Night 7-11', 'Saturday Morning 8-12', 'Saturday Afternoon 12-5', 
-	'Saturday Night 7-11', 'Sunday Morning 8-12', 'Sunday Afternoon 12-5', 
-	'Sunday Night 7-11'), 
-	primary key (bnumber)
-)ENGINE = InnoDB;
-
-drop table if exists courses;
-create table courses(
-	courseNum int,
-	courseName varchar(60),
-	instructor varchar(60),
-	semester varchar(7), 
-	psetNum int NOT NULL,
-	psetTitle varchar(30),
-	maxSize int,
-	dueDate date,
-	-- foreign key(instructor) references users(name) on delete cascade on update cascade,
-	primary key (courseNum)
-)ENGINE = InnoDB;
-
-drop table if exists groups;
-create table groups(
-	groupNum int auto_increment,
-	bnumber int NOT NULL,
-	-- foreign key (bnumber) references users(bnumber) on delete cascade on update cascade,
-	primary key (groupNum)
-)ENGINE = InnoDB;
-
-drop table if exists groupByPset;
-create table groupForPset(
-	groupNum int,
-	psetNum int,
-	-- foreign key (groupNum) references groups(groupNum) on delete cascade on update cascade,
-	-- foreign key (psetNum) references courses(psetNum) on delete cascade on update cascade,
-	primary key (groupNum, psetNum)
-)ENGINE = InnoDB;
-
-drop table if exists enrollment;
-create table enrollment(
-	BNumber int references users(bnumber) on delete cascade on update cascade,
-	courseNum int references courses(courseNum) on delete cascade on update cascade,
-	primary key (bnumber, courseNum)
-)ENGINE = InnoDB;
-<html>
-    <head>
-        <title>{% block title %} Assignments {% endblock %}</title>
-         <link type="text/css"
-          rel="stylesheet"
-          href="{{ url_for('static', filename = 'style.css') }}">
-    </head>
-    <body>
-        {% extends "base.html" %}
-        {% block content %}
-        <div class="assignments content">
-            {% for assignment in assignmnets %}
-            {% block tile %}
-            <div class="card">
-                <div class="container">
-                    <h4><b>{{assignment.psetTitle}}</b></h4>
-                    <p>{{assignment.dueDate}}</p>
-                </div>
-            </div>
-            {% endblock %}
-            {% endfor %}
-        </div>
-        {% endblock %}
-    </body>
     
-</html><!doctype html>
+    
+    # print(profile(conn, 'alewi@wellesley.edu'))
+    # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
+    # print(roster(conn, 13587))
+    # print(isInstructor(conn, 'B20800497'))
+    
+    # print(psetGroup(conn,13587, 1, 16 ))
+    # print(numGroup(conn,13587, 1))
+    # print(groups(conn,13587, 1)){% extends "base.html" %}
+
+{% block title %} Assignments {% endblock %}
+{% block content %}
+        <div class=" content">
+        	<form method=POST action="{{url_for('newAssignment')}}">
+
+                <fieldset> <!--group related elements and draw a box around those elements-->
+                <legend>Assignment Information</legend> <!--a caption to the fieldsete-->
+                <table>
+                <tr><td><label for="psetNum" accesskey="n">(1) Assignment Number:</label></td> <!--td is like a cell in the table; note that for matches the id of the next element; access key is a shortcut to an element-->
+                    <td><input type="text" name="psetNum" id="psetNum"></td></tr>
+                <tr><td><label for="psetTitle" accesskey="t">(2) Assignment Title:</label></td>
+                    <td><input type="text" name="psetTitle" id="psetTitle"></td></tr>
+                <tr><td><label for="dueDate" accesskey="d">(3) Due Date:</label></td>
+                    <td><input type="date" name="dueDate" id="dueDate"></td></tr>
+                <tr><td><label for="maxSize" accesskey="s">(4) Max Group Size:</label></td>
+                    <td><input type="number" name="maxSize" id="maxSize"></td></tr>
+               
+                </table>
+                </fieldset>
+            
+                <p> <input type='submit' value='Add New Assignment'> </p>
+        
+        
+            </form>
+        	<form>
+        	     <tr><td><label for="pdf" accesskey="p">(p) Uplaod Assignment:</label></td>
+                    <td><input type="file" name="assign-pdf" id="assign-pdf"></td></tr>
+                    <input type='submit' value='Upload Assignment'>
+        	</form>
+        </div>
+{% endblock %}<!doctype html>
 <html>
     <head>
         <meta charset="utf-8"/>
         <title>{% block title %} Base {% endblock %}</title>
-    </head>
-    <body>
-        <ul class= "navbar">
-            <li class="nav_li"><a class= "" href="/profile">Profile</a></li>
-            <li class="nav_li"><a class= ""  href="/courses">Courses</a></li>
-            <li class="nav_li"><a class= "" href="/assignments">Assignments</a></li>
-        </ul>
-        {% block content %}
-        {% endblock %}
-    </body>
-</html><html>
-    <head>
-        <title>{% block title %} Courses {% endblock %}</title>
-        <meta charset="utf-8">
         <link type="text/css"
           rel="stylesheet"
           href="{{ url_for('static', filename = 'style.css') }}">
+          {% block head %}
+          {% endblock %}
     </head>
     <body>
-        {% extends "base.html" %}
-        {% block content %}
-        <div class="courses content">
-                {% block tile %}
-                <div class="card">
-                    <div class="container">
-                        <h4><b>example</b></h4>
-                        <p>example</p>
-                        <p>example</p> 
+        {%block navabar%}
+        <ul class= "navbar">
+            {% if logged_in %}
+            <li class="nav_li"><a class= "" href="{{url_for('dashboard')}}">Dashboard</a></li>
+            {%else%}
+             <li class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
+            {% endif %}
+           
+            <li class="nav_li"><a class= "" href="{{url_for('profile')}}">Profile</a></li>
+            <li class="nav_li"><a class= ""  href="{{url_for('courses')}}">Courses</a></li>
+            {% if logged_in %}
+             <li class="nav_li"><a class= "logout" href="{{url_for('logout')}}">Logout</a></li>
+            {% endif %}
+        </ul>
+        {%endblock%}
+        
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div id="messages" style="margin-left:45%;">
+                    {% for msg in messages %}
+                        {{msg}}
+                    {% endfor %}
                     </div>
+                {% endif %}
+             {% endwith %}
+            {% block content %}
+            
+            <div class="content" style="width:45%;">
+         
+                <h1 style="text-align:center;">CoPro</h1>
+                <form method="POST" action="{{url_for('flaskLogin')}}">
+                  <input type="text" id="login" name="username-email" placeholder="login">
+                  <input type="password" id="password" name="password" placeholder="password">
+                  <input type="submit"value="Log In">
+    
+                </form>
+                <div id="customBtn" class="customGPlusSignIn">
+                  <span class="icon"></span>
+                  <span class="buttonText">Google</span>
+                </div>
+              
+                 <a href="{{url}}">Login</a>
+                 
+             </div>
+            {% endblock %}
+             
+       
+    </body>
+{% block script %}
+
+{%endblock%}
+</html>{% extends "base.html" %}
+{% block title %} Courses {% endblock %}
+        {% block content %}
+                <div class="courses content" id="courses-content">
+                {% block tile %}
+                {% for course in courses %}
+                    <div class="card" id={{course.courseNum}} onclick="redirect()">
+                        <div class="container" >
+                            <h4><b>{{course.courseName}}</b></h4>
+                            <p>{{course.semester}}</p>
+                            <p>{{course.instructor}}</p> 
+                        </div>
+                    </div>
+                {% endfor %}
+                <div>
+                    {% if instructor %}
+                        <a href = "{{url_for('newCourse', bnumber = bnumber)}}">Add a new course</a>
+                    {% endif %}
+                </div>
+                {% endblock %}
                 </div>
         {% endblock %}
+        
+    {% block script %}          
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script>
+        function redirect(){
+             $(".card").on("click",function (event){
+                var courseNum = $(this).attr('id');
+                window.location.href ="courses/"+courseNum;
+                
+            });
+        }
+    </script>
+    {%endblock%}
+</html>{% extends "base.html"%}
+{% block title %}Dashboard{% endblock %}
+
+{% block content%}
+                <div class = 'content'>
+                    Hi, {{name}}
+                    <br>
+                    Welcome to CoPro! 
+                    <br>
+                    An Application that makes assigning partners/teammates to students easier.
+                </div>
+{% endblock %}{% extends "base.html" %}
+{% block title %} {{course.courseName}}{% endblock %}
+
+{%block content %}
+    <div class = "content">
+        <h1>{{course.courseName}}</h1>
+        <p>Semester: {{course.semester}}</p>
+        <p>Instructor: {{course.instructor}}</p>
+        <div class = "groups">    
+            <h2><b>Groups ( {{numGroups}} )</b></h2>
+                    <table id="groups-list">
+                        <tr>
+                                <th>Group Num</th>
+                        </tr>
+                        {% for group in groups %}
+                            <tr data-pid={{group.groupNum}}>
+                                    <td class="group-num">{{group.groupNum}}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
         </div>
-        {% endblock %}
-    </body>
+        <button id='match'>Create Groups</button>
+    </div>
+{%endblock%}
+{% block script %}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script>
+    var URL = "{{url_for('match')}}"
     
-</html><html>
+    $('#match').click(function(e){
+        console.log( {{courseNum}} );
+        $.get(URL,{'courseNum': {{courseNum}}, 'pid': {{pid}} }, function(data){
+            console.log(data);
+        });
+    });
+</script>
+{% endblock %}{% extends "base.html" %}
+{% block title %} {{course.courseName}}{% endblock %}
+
+{%block content %}
+    <div class = "content">
+        <h1>{{course.courseName}}</h1>
+        <p>Semester: {{course.semester}}</p>
+        <p>Instructor: {{course.instructor}}</p>
+        <div class = "groups">    
+            <h2><b>Group {{groupNum}}</b></h2>
+                    <table id="groups-list">
+                        <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                        </tr>
+                        {% for person in group %}
+                            <tr data-pid={{group.groupNum}}>
+                                    <td class="title">{{person.name}}</td>
+                                    <td class="title">{{person.email}}</td>
+                                <td class="dueDate">{{person.phone}}</td>
+                            </tr>
+
+                        {% endfor %}
+                    </table>
+        </div>
+                    
+    </div>
+{%endblock%}
+<html>
     <head>
         <title>{% block title %} Login {% endblock %}</title>
          <link type="text/css"
@@ -320,6 +934,44 @@ create table enrollment(
     
 </html><html>
     <head>
+        <title>{% block title %} Update {% endblock %}</title>
+         <link type="text/css"
+          rel="stylesheet"
+          href="{{ url_for('static', filename = 'style.css') }}">
+    </head>
+    <body>
+        {% extends "base.html" %}
+        {% block content %}
+        
+            <div class = "newCourse content">    
+                <h2>New Course</h2>
+                <form method=POST action="{{url_for('newCourse')}}">
+    
+                    <fieldset> <!--group related elements and draw a box around those elements-->
+                    <legend>Assignment Information</legend> <!--a caption to the fieldsete-->
+                    <table>
+                    <tr><td><label for="courseNum" accesskey="n">(1) Course Number:</label></td> <!--td is like a cell in the table; note that for matches the id of the next element; access key is a shortcut to an element-->
+                        <td><input type="number" name="courseNum" id="courseNum"></td></tr>
+                    <tr><td><label for="courseName" accesskey="t">(2) Course Title:</label></td>
+                        <td><input type="text" name="courseName" id="courseName"></td></tr>
+                    <tr><td><label for="instructor" accesskey="i">(3) Instructor BNumber:</label></td>
+                        <td><input type="text" name="instructor" id="instructor" value = '{{bnumber}}' disabled></td></tr>
+                    <tr><td><label for="semester" accesskey="s">(4) Semester (i.e FA-2019):</label></td>
+                        <td><input type="text" name="semester" id="semester"></td></tr>
+                    </table>
+                    </fieldset>
+                
+                    <p> <input type='submit' value='Add New Course'> </p>
+            
+            
+                </form>
+            </div>
+        {% endblock %}
+        
+    </body>
+    
+</html><html>
+    <head>
         <title>Profile</title>
         <link type="text/css"
           rel="stylesheet"
@@ -330,100 +982,381 @@ create table enrollment(
     <body>
         {% block content %}
             <div class="profile content">
-            <h1>Add Info</h1>
-            <form id="newUser" method="POST" action="">
+            <h1>Create A New Account</h1>
+            <form id="newUser" method="POST" action="{{url_for('newUser')}}">
+                <p><label for="add-username">Username:</label>
+                <input type="text" id="add-username" name="username" required></p>
+                <p><label for="add-passwd">Password:</label>
+                <input type="password" id="add-passwd" name="password1" required></p>
+                <p><label for="add-passwd2">Password Again:</label>
+                <input type="password" id="add-passwd2" name="password2" required></p>
                 <p><label for="add-name">Name:</label>
-                <input type="text" id="add-name" name="name" value ="{{name}}"></p>
+                <input type="text" id="add-name" name="name" required></p>
+                <p><label for="add-bnumber">BNumber:</label>
+                <input type="text" id="add-bnumber" name="bnumber" required></p>
                 <p><label for="add-email">Email:</label>
-                <input type="text" id="add-email" name="email" value="{{email}}"></p>
+                <input type="text" id="add-email" name="email" required></p>
+                <p><label for="userType" id="add-userType" name='userType'>Type of User:</label>
+                <select name='userType' required>
+                    <option value='none'>Choose One</option>
+                    <option value ='Student'>Student</option>
+                    <option value ='Instructor'>Instructor</option>
+                </select>
+                </p>
                 <p><label for="add-email">Phone Number:</label>
                 <input type="text" id="add-phone" name="phone"></p>
-                <p><label for="add-bnumber">BNumber:</label>
-                <input type="text" id="add-bnumber" name="bnumber"></p>
-                <p><input type="submit" value="Submit Changes"></p>
+                
+                <p><input type="submit" value="Create Account"></p>
             </form>
             </div>
         {% endblock %}
     </body>
-</html><html>
+</html>{% extends "base.html" %}
+{% block title %} {{user.name}} {% endblock %}
+{% block head %}
+{%endblock%}
+
+
+        {% block content %}
+        <div class="content">
+                <!-- Display info about the user show reshall and avail if student -->
+                <h1 id="user-profile-heading">{{user.name}}</h1>
+                 <div class="container-img">
+                  <img id="profile-img" src="{{ url_for('pic', bnumber= user.bnumber) }}">
+                </div>
+                <!--Here when button clicked show form for editing details -->
+                <table id = "user-profile-table">
+                    <tr>
+                        <th>Username</th>
+                        <td style="border-top:none;">{{user.username}}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{user.email}}</td>
+                    </tr>
+                    <tr>
+                        <th>Residence</th>
+                        <td>{{user.resHall}}</td>
+                    </tr>
+                    <tr>
+                        <th>Bnumber</th>
+                        <td>{{user.bnumber}}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone</th>
+                        <td>{{user.phone}}</td>
+                    </tr>
+                    <tr>
+                        <th>Availability</th>
+                        <td>{{user.availability}}</td>
+                    </tr>
+                </table>
+                {%if currentUser %} 
+                    <button id="edit-form-btn">Edit Profile</button>
+                {% endif %}
+
+                <form id="edit-profile-form" method="POST" style="display:none;" enctype="multipart/form-data"  action="{{url_for('update')}}">
+                    <label>Upload New Image:<input type="file" name="pic"></label>
+                    <button id="upload-btn">Upload New Image</button>
+                    <p>
+                        <label for="edit-username">Username:</label>
+                        <input type="text" id="new-username" name="username" value="{{user.username}}">
+                        <label for="edit-email">Email:</label>
+                        <input type="text" id="new-email" name="email" value ="{{user.email}}">
+                    </p>
+                    <p>
+                        <label for="edit-bnumber">BNUMBER:</label>
+                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}">
+                        <label for="edit-phone">Phone Number:</label>
+                        <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
+                    </p>
+                    <p>
+                        <label for="edit-residence">Residence:</label>
+                        <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
+                        <label for="edit-avail">Availability:</label>
+                          <input list="availability" name="availability" id="check" value={{user.availability}}>
+                              <datalist id="availability">
+                                <option value="Monday Morning 8-12">
+                                <option value='Monday Afternoon 12-5'>
+                                <option value='Monday Night 7-11'>
+                                <option value='Tuesday Morning 8-12'>
+                                <option value="Tuesday Afternoon 12-5">
+                                <option value="Tuesday Night 7-11">
+                                <option value="Wednesday Morning 8-12">
+                                <option value="Wednesday Afternoon 12-5">
+                                <option value="Wednesday Night 7-11">
+                                <option value="Thursday Morning 8-12">
+                                <option value="Thursday Afternoon 12-5">
+                                <option value="Thursday Night 7-9">
+                                <option value="Friday Morning 8-12">
+                                <option value="Friday Afternoon 12-5">
+                                <option value="Friday Night 7-9">
+                                <option value="Saturday Morning 8-12">
+                                <option value="Saturday Afternoon 12-5">
+                                <option value="Saturday Night 7-9">
+                                <option value="Sunday Morning 8-12">
+                                <option value="Sunday Afternoon 12-5">
+                                <option value="Sunday Night 7-9">
+                              </datalist>
+                              
+    
+                        <!--<input type="text" id="new-avail" name="avail" value={{user.availability}}> -->
+                    </p>
+            
+                    <input type="submit" name="submit" value="Save Changes">
+                    
+                  
+                </form>
+            </div>
+            
+            
+             
+        {% endblock %}
+        
+        {% block script %}
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+        <script>
+        var URL = "{{url_for('file_upload')}}";
+
+        /* global $ */
+            $("#edit-form-btn").on('click', function showEditForm() {
+            var x = document.getElementById("edit-profile-form");
+            if (x.style.display === "none") {
+                x.style.display = "block";
+                
+                var table = document.getElementById("user-profile-table")
+                table.style.display = "none";
+                this.style.display="none";
+            } 
+            });
+            
+            $("#upload-btn").click(function(e){
+                e.preventDefault();
+                sendImg();
+            });
+            
+            $("#check").change(function(e){
+                e.preventDefault();
+                a = $(this).val();
+                console.log(a);
+                $.get('/availabilityAjax', {'availability': a, 'bnumber':$('#new-bnumber').val() }, function(data){
+                    console.log(data);
+                });
+            });
+            
+            function sendImg() {
+                console.log("Sending to the back end");
+               $.ajax({
+                      url:URL,
+                      type:'POST',
+                      data:new FormData($("#edit-profile-form")[0]),
+                      bnumber: $("#new-bnumber").val(),
+                      cache:false,
+                      processData:false,
+                      contentType:false,
+                      error:function(){
+                          console.log("upload error")
+                      },
+                      success:function(data){
+                          console.log(data);
+                          console.log("upload success");
+                          $('profile-img').attr("src", "{{url_for('pic', bnumber=" + bnumber + ")}}")
+                      }
+                  });
+
+            }  
+            function updateImg(obj){
+                if(obj.error) {
+                     console.log(obj.err)
+                } else {
+                    $('profile-img').attr("src","pic/"+obj.image)
+                }
+            }
+        </script>
+        {% endblock %}{% extends "base.html" %}
+{% block title %} {{course.courseName}}{% endblock %}
+
+{%block content %}
+    <div class = "content">
+        <h1>{{course.courseName}}</h1>
+        <p>Semester: {{course.semester}}</p>
+        <p>Instructor: {{course.instructor}}</p>
+        
+        <h2>Roster</h2>
+        <div class = "roster">
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                </tr>
+                {% for person in roster %}
+                <tr class="table-row" data-id={{person.bnumber}}>
+                    <td class="name-row"><a href="{{url_for('profile', bnumber = person.bnumber)}}">{{person.name}}</a></td>
+                    <td class="email-row">{{person.email}}</td>
+                    <td class="phone-row">{{person.phone}}</td>
+                </tr>
+                {% endfor %}
+            </table>
+        <div class = "assignments">    
+            <h2><b>Assignments</b></h2>
+            
+            {% if instructor %}
+                <a href={{url_for('newAssignment')}}>Add a new assignment</a>
+            {% endif %}
+            
+                    <table id="assignment-list">
+                        <tr>
+                                <th>Title</th>
+                                <th>Due Date</th>
+                                <th>Max Size</th>
+                                {% if instructor %}
+                                    <th>Groups</th>
+                                {% else %}
+                                    <th>Group</th>
+                                {% endif%} 
+                                
+                        </tr>
+                        {% for pset in psets %}
+                            <tr data-pid={{pset.pid}}>
+                                {% if instructor %}
+                                    <td class="title"><a href="{{url_for('deleteAssignment', pid = pset.pid)}}">{{pset.psetTitle}}</a></td>
+                                {% else %}
+                                    <td class="title">{{pset.psetTitle}}</td>
+                                {% endif%}
+                                <td class="dueDate">{{pset.dueDate}}</td>
+                                <td class="size">{{pset.maxSize}}</td>
+                                {% if instructor %}
+                                    <td class='groups'><a href="{{url_for('groupProf' ,courseNum = courseNum, pid= pset.pid)}}">View Groups</a></td>
+                                {% else %}
+                                    <td class='group'>
+                                        <a href = "{{url_for('group', courseNum = courseNum, pid = pset.pid, groupNum = pset.groupNum)}}">{{pset.groupNum}}</a>
+                                    </td>
+                                {% endif %}
+                            </tr>
+
+                        {% endfor %}
+                        
+                        
+                    </table>
+        </div>
+                    
+        </div>  
+    </div>
+{%endblock%}
+
+<html>
     <head>
-        <title>Profile</title>
-        <link type="text/css"
+        <title>{% block title %} Update {% endblock %}</title>
+         <link type="text/css"
           rel="stylesheet"
           href="{{ url_for('static', filename = 'style.css') }}">
-        <script type="{{ url_for('static', filename = 'app-js.js') }}"></script>
     </head>
     <body>
         {% extends "base.html" %}
         {% block content %}
-        <div class="profile content">
-            <!-- Display info about the user show reshall and avail if student -->
-            <p>Name: {{user.name}}</p>
-            <p>email: {{user.email}}</p>
+        
+        {% if pset %}
+        
             
-        
-            <button onclick="showEditForm()">Edit Profile Details</button>
-            <!--Here when button clicked show form for editing details -->
-            <form id="editForm" method="POST" action="">
-                <p><label for="edit-name">Name:</label>
-                <input type="text" id="new-name" name="name" value="{{name}}"></p>
-                <p><label for="edit-email">Email:</label>
-                <input type="text" id="new-email" name="email" value ="{{email}}" ></p>
-                <p><label for="edit-phone">Phone Number:</label>
-                <input type="text" id="new-phone" name="phone"></p>
-                <p><label for="edit-residence">Residence:</label>
-                <input type="text" id="new-residence" name="residence"></p>
-                <p><label for="edit-avail">Availability:</label>
-                <input type="text" id="new-avail" name="avail"></p>
-                <p><input type="submit" value="Submit Changes"></p>
-            </form>
-        </div>
+            <div class="update content">
+                <h2>Update {{pset.psetTitle}}</h2>
+            	<form method=POST action="{{url_for('deleteAssignment', pid = pset.pid)}}">
+                  <table>
+                        <tr>
+                          <td><label for="pid">Assignment Number</label></td>
+                          <td><input name='pid' value='{{pset.pid}}'></td> 
+                        </tr>
+                        <tr>
+                          <td><label for="psetTitle">Assignment Title</label></td>
+                          <td><input name='psetTitle' value='{{pset.psetTitle}}'></td>
+                        </tr>
+                        <tr>
+                          <td><label for="dueDate">Due Date</label></td>
+                          <td><input name='dueDate' value='{{pset.dueDate}}'></td>
+                        </tr>
+                        <tr>
+                          <td><label for="maxSize">Max Group Size</label></td>
+                          <td><input name='maxSize' value='{{pset.maxSize}}'></td>
+                        </tr>
+                        <tr>
+                          <td><label for="courseNum">Course Number</label></td>
+                          <td><input name='courseNum' value='{{courseNum}}' disabled></td>
+                        </tr>
+                  </table>
+                  <input type="submit" name="submit" value="update">
+                  <input type="submit" name="submit" value="delete">
+                </form>
+            
+          	</div>
+      	{% endif %}
         {% endblock %}
-        
-        {% block script %}
-        <script>
-        /* global $ */
-            $("#editForm").on('click', function showEditForm() {
-            var x = document.getElementById("editForm");
-            if (x.style.display === "none") {
-                x.style.display = "block";
-            } 
-            else {
-                x.style.display = "none";
-            }
-            });
-        </script>
-        
-        {% endblock %}
-   
     </body>
     
-</html>
+</html>@import url('https://fonts.googleapis.com/css?family=Lato');
+
 body {
+  font-family: 'Lato', sans-serif;
   margin: 0;
-  background-color: white;
+  background-color: #E8F1F2;
   color:#368F8B;
-  font-family: sans-serif;
 
 }
 
+input{
+    padding: .25rem .5rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+    border: 1px solid #ced4da;
+}
 .navbar {
   list-style-type: none;
   margin: 0;
   padding: 0;
-  width: 15%;
-  background-color: #adb2ba;
+  width: 16%;
+  background-color: #368F8B;
+  color:white;
   position: fixed;
   height: 100%;
   overflow: auto;
-  font-size: 16px;
+  font-size: 20px;
 }
 
 .nav_li a {
   display: block;
-  color: #160F29;
+  color: white;
   padding: 8px 16px;
   text-decoration: none;
+}
+
+#profile-img{
+    /*width: 200px;*/
+    /*border-radius: 50%;*/
+    /*display: block;*/
+    /*margin: auto;*/
+    border-radius: 50%;
+    height: auto;
+    display: block;
+    width: 100%;
+}
+#user-profile-heading{
+  text-align: center;
+  
+}
+
+button{
+    padding: .25rem .5rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .2rem;
+    border: 1px solid #ced4da;
+}
+table td{
+    padding: .75rem;
+    vertical-align: top;
+    border-top: 1px solid #dee2e6;
 }
 
 .nav_li a.active {
@@ -435,15 +1368,71 @@ body {
   background-color: #555;
   color: white;
 }
-
-.content {
-  margin-left: 15%;
+.container-img{
+   width: 200px;
+   display: block;
+   margin: auto;
 }
 
+/* The overlay effect (full height and width) - lays on top of the container and over the image */
+.overlay {
+    position: absolute;
+    margin: auto;
+    top:17.1%;
+    border-radius: 50%;
+    height: 200px;
+    width: 200px;
+    opacity: 0;
+    transition: .3s ease;
+    background-color: red;
+}
+
+/* When you mouse over the container, fade in the overlay icon*/
+.container-img:hover .overlay {
+  opacity: 1;
+}
+
+.card:hover {
+    background: #66b2b2;
+    color: white;
+}
+
+.text {
+  color: white;
+  font-size: 20px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+#courses-content{
+  margin-left: 20%;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-gap: 1em;
+}
+.content {
+  width: fit-content;
+  height:100%;
+  padding: 3%;
+  margin:0 auto;
+  
+}
+#courses-content{
+  margin-left: 20%;
+}
 .card {
   /* Add shadows to create the "card" effect */
-  width: 10%;
-  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+  width: 17rem;
+  font-size: 90%;
+  height: 9rem;
+  margin: 2%;
+  background:white;
+  box-shadow: 0 4px 5px 0 rgba(0,0,0,0.2);
   transition: 0.3s;
 }
 
@@ -456,3 +1445,244 @@ body {
 .container {
   padding: 2px 16px;
 }
+
+use c9;
+
+drop table if exists pdffile;
+
+create table pdffile (
+    courseNum int primary key,
+    filename varchar(50),
+    foreign key (courseNum) references groups(groupNum)
+    on delete cascade on update cascade
+)ENGINE = InnoDB;
+describe pdffile;
+use c9;
+
+drop table if exists picblob;
+create table picblob (
+    bnumber varchar(9) primary key,
+    image blob,
+    foreign key (bnumber) references users(bnumber) 
+    on delete cascade on update cascade
+);
+describe picblob;
+use c9;
+
+drop table if exists picfile;
+
+create table picfile (
+    bnumber varchar(9) primary key,
+    filename varchar(50),
+    foreign key (bnumber) references users(bnumber)
+    on delete cascade on update cascade
+)ENGINE = InnoDB;
+describe picfile;
+-- Daphka Alius
+-- Anah Lewi
+-- Miranda Hardy
+
+-- This file sets up a 'database' for the CoPro web application. The database
+-- consists of tables: users, courses, groups, groupsForPset, enrollment.
+
+-- Specify the C9 Database
+use c9;
+
+
+-- Drop any existing tables if necessary
+drop table if exists groupForPset;
+drop table if exists groups;
+drop table if exists enrollment;
+-- drop table if exists psets;
+-- drop table if exists courses;
+-- drop table if exists users;
+
+
+-- Defining Tables
+create table if not exists users(
+	username varchar(30),
+	bnumber varchar(9) NOT NULL,
+	name varchar(60),
+	password varchar(6),
+	email varchar(30),
+	phone varchar(12),
+	userType enum('Student', 'Instructor') NOT NULL,
+	resHall varchar(30) NULL,
+	availability set('Monday Morning 8-12', 'Monday Afternoon 12-5', 
+	'Monday Night 7-11', 'Tuesday Morning 8-12', 'Tuesday Afternoon 12-5', 
+	'Tuesday Night 7-11', 'Wednesday Morning 8-12', 'Wednesday Afternoon 12-5', 
+	'Wednesday Night 7-11', 'Thursday Morning 8-12', 'Thursday Afternoon 12-5', 
+	'Thursday Night 7-11', 'Friday Morning 8-12', 'Friday Afternoon 12-5', 
+	'Friday Night 7-11', 'Saturday Morning 8-12', 'Saturday Afternoon 12-5', 
+	'Saturday Night 7-11', 'Sunday Morning 8-12', 'Sunday Afternoon 12-5', 
+	'Sunday Night 7-11') NULL,
+	primary key (bnumber));
+	-- ENGINE = InnoDB;
+
+
+-- create table if not exists courses(
+-- 	courseNum int,
+-- 	courseName varchar(60),
+-- 	instructor varchar(9),
+-- 	semester varchar(7), 
+-- 	foreign key (instructor) references users(bnumber),
+-- 	primary key (courseNum));
+-- 	-- ENGINE	= InnoDB;
+
+-- create table if not exists psets(
+-- 	pid int NOT NULL,
+-- 	psetTitle varchar(60),
+-- 	dueDate date,
+-- 	maxSize int,
+-- 	courseNum int, 
+-- 	foreign key (courseNum) references courses(courseNum),
+-- 	primary key (pid));
+-- 	-- ENGINE = InnoDB;
+	
+	
+create table if not exists groups(
+	groupNum int NOT NULL,
+	pid int,
+	courseNum int,
+	foreign key (pid) references psets(pid),
+	foreign key (courseNum) references courses(courseNum),
+	primary key (groupNum));
+	-- ENGINE	= InnoDB;
+
+
+create table if not exists groupForPset(
+	groupNum int,
+	bnumber varchar(9),
+	foreign key (groupNum) references groups(groupNum),
+	foreign key (bnumber) references users(bnumber)
+);
+	-- ENGINE	= InnoDB;
+	
+create table if not exists enrollment(
+	courseNum int,
+	bnumber varchar(9),
+	foreign key(courseNum)  references courses(courseNum),
+	foreign key(bnumber) references users(bnumber),
+	primary key (bnumber, courseNum));
+	-- ENGINE	= InnoDB;
+-- Daphka Alius
+-- Miranda Hardy
+-- Anah Lewi
+
+-- Testing Code
+-- This code test inserting information into the tables in the database;
+use c9;
+
+
+-- -- Users
+-- insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+-- availability) values ('ngina','password', 'B20814255', 'Ngina Kariuki', 
+-- 'ngina@wellesley.edu', '786-317-0000', 'Instructor', 'Tower Court West', NULL);
+
+-- insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+-- availability) values ('sanderson','password5', 'B20814256', 'Scott Anderson', 
+-- 'sanderson@wellesley.edu', '786-234-0000', 'Instructor', NULL, NULL);
+
+
+-- insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+-- availability) values ('dalius', 'password1', 'B20800497', 'Daphka Alius', 
+-- 'dalius@wellesley.edu', '786-317-0380', 'Student', 'Tower Court West', NULL);
+
+-- insert into users(username, password, bnumber, name, email, phone, userType, resHall,  
+-- availability) values ('lanah', 'password3', 'B20800000', 'Anah Lewi', 
+-- 'alewi@wellesley.edu', '123-456-7890', 'Student', 'Stone Hall', NULL);
+
+-- insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+-- availability) values ('mhardy', 'password4', 'B20800001', 'Miranda Hardy', 
+-- 'mhardy@wellesley.edu', '098-765-4321', 'Student', 'Tower Court East', NULL);
+
+insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+availability) values ('Ana', 'password5', 'B20800043', 'Ana Carter', 
+'acarter@wellesley.edu', '098-765-4321', 'Student', 'Tower Court East', NULL);
+
+
+
+-- -- Courses
+-- insert into courses(courseNum, courseName, instructor, semester) 
+-- values ('13587', 'Intro to the Black Experience', 'B20814255', 'FA-2019');
+
+-- insert into courses(courseNum, courseName, instructor, semester) values
+-- ('15568', 'The African American Literary Tradition', 'B20814255', 'FA-2019');
+
+-- insert into courses(courseNum, courseName, instructor, semester) values
+-- ('15572', 'Musical Theater', 'B20814255','SP-2019');
+
+-- PSET
+-- insert into psets(pid, psetTitle,courseNum, dueDate) values(1, 'Crud', '13587', '2019-07-08');
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (2, 'P1', '13587', '2019-07-11');
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (3, 'P2', '13587', '2019-07-12');
+-- insert into	psets(pid, psetTitle, courseNum, dueDate) values (4, 'P3', '13587', '2019-07-13');
+
+
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (5, 'Essay 1', '15572', '2019-08-01');
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (6, 'Essay 2', '15572', '2019-08-02');
+
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (7, 'PS01', '15568', '2019-08-03');
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (8, 'PS02', '15568', '2019-08-04');
+-- insert into psets(pid, psetTitle, courseNum, dueDate) values (9,'PS03', '15568', '2019-08-05');
+-- insert into psets(pid, psetTitle, courseNum) values(10, 'Homework 01', '15568');
+
+
+-- -- Enrollment
+-- insert into enrollment(bnumber, courseNum) values('B20800497', '15572');
+-- insert into enrollment(bnumber, courseNum) values('B20800000', '15572');
+-- insert into enrollment(bnumber, courseNum) values('B20800001', '15572');
+
+-- insert into enrollment(bnumber, courseNum) values('B20800497', '15568');
+-- insert into enrollment(bnumber, courseNum) values('B20800000', '15568');
+-- insert into enrollment(bnumber, courseNum) values('B20800001', '15568');
+
+-- insert into enrollment(bnumber, courseNum) values('B20800497', '13587');
+-- insert into enrollment(bnumber, courseNum) values('B20800000', '13587');
+-- insert into enrollment(bnumber, courseNum) values('B20800001', '13587');
+
+
+insert into enrollment(bnumber, courseNum) values('B20800497', '15773');
+insert into enrollment(bnumber, courseNum) values('B20800000', '15773');
+insert into enrollment(bnumber, courseNum) values('B20800001', '15773');
+insert into enrollment(bnumber, courseNum) values('B20800043', '15773');
+
+-- Groups (Can't test this for some referential integrity problem)
+insert into groups(groupNum, pid, courseNum) values 
+('16',1, '13587');
+insert into groups(groupNum, pid, courseNum) values 
+('17',2, '13587');
+insert into groups(groupNum, pid, courseNum) values 
+('18',3, '13587');
+
+insert into groups(groupNum, pid, courseNum) values 
+('19', 6, '15568');
+insert into groups(groupNum, pid, courseNum) values 
+('20',7, '15568');
+insert into groups(groupNum, pid, courseNum) values 
+('21',8, '15568');
+
+insert into groups(groupNum, pid, courseNum) values 
+('23',4, '15572');
+insert into groups(groupNum, pid, courseNum) values 
+('24',5, '15572');
+insert into groups(groupNum, pid, courseNum) values 
+('25',9, '15572');
+
+
+-- GroupsForPset
+insert into groupForPset(groupNum, bnumber) values ('16', 'B20800000');
+insert into groupForPset(groupNum, bnumber) values ('16', 'B20800001');
+insert into groupForPset(groupNum, bnumber) values ('16', 'B20800497');
+
+insert into groupForPset(groupNum, bnumber) values ('17', 'B20800000');
+insert into groupForPset(groupNum, bnumber) values ('17', 'B20800001');
+insert into groupForPset(groupNum, bnumber) values ('17', 'B20800497');
+
+insert into groupForPset(groupNum, bnumber) values ('19', 'B20800497');
+insert into groupForPset(groupNum, bnumber) values ('19', 'B20800000');
+insert into groupForPset(groupNum, bnumber) values ('19', 'B20800001');
+
+insert into groupForPset(groupNum, bnumber) values ('23', 'B20800001');
+insert into groupForPset(groupNum, bnumber) values ('23', 'B20800497');
+insert into groupForPset(groupNum, bnumber) values ('23', 'B20800000');

@@ -13,6 +13,11 @@ use c9;
 -- 'ngina@wellesley.edu', '786-317-0000', 'Instructor', 'Tower Court West', NULL);
 
 -- insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
+-- availability) values ('sanderson','password5', 'B20814256', 'Scott Anderson', 
+-- 'sanderson@wellesley.edu', '786-234-0000', 'Instructor', NULL, NULL);
+
+
+-- insert into users(username, password, bnumber, name, email, phone, userType, resHall, 
 -- availability) values ('dalius', 'password1', 'B20800497', 'Daphka Alius', 
 -- 'dalius@wellesley.edu', '786-317-0380', 'Student', 'Tower Court West', NULL);
 

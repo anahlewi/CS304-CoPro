@@ -13,8 +13,11 @@
         {%block navabar%}
         <ul class= "navbar">
             {% if logged_in %}
+            <li class="nav_li"><a class= "" href="{{url_for('dashboard')}}">Dashboard</a></li>
+            {%else%}
+             <li class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
             {% endif %}
-            <li class="nav_li"><a class= "" href="{{url_for('index')}}">Home</a></li>
+           
             <li class="nav_li"><a class= "" href="{{url_for('profile')}}">Profile</a></li>
             <li class="nav_li"><a class= ""  href="{{url_for('courses')}}">Courses</a></li>
             {% if logged_in %}
@@ -35,16 +38,12 @@
             {% block content %}
             
             <div class="content" style="width:45%;">
-            {% if logged_in %}
-                <div>
-                    Hi, {{name}}
-                </div>
-            {% else %}
+         
                 <h1 style="text-align:center;">CoPro</h1>
                 <form method="POST" action="{{url_for('flaskLogin')}}">
-                  <input type="text" id="login" class="fadeIn second" name="username-email" placeholder="login">
-                  <input type="password" id="password" class="fadeIn third" name="password" placeholder="password">
-                  <input type="submit" class="fadeIn fourth" value="Log In">
+                  <input type="text" id="login" name="username-email" placeholder="login">
+                  <input type="password" id="password" name="password" placeholder="password">
+                  <input type="submit"value="Log In">
     
                 </form>
                 <div id="customBtn" class="customGPlusSignIn">
@@ -54,7 +53,6 @@
               
                  <a href="{{url}}">Login</a>
                  
-            {% endif %}
              </div>
             {% endblock %}
              

@@ -7,14 +7,16 @@ import matching
 from datetime import datetime
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
+import bcrypt
+
 
 app = Flask(__name__)
 import sys, os, random
 import imghdr
 import MySQLdb
 
-app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 app.config['UPLOADS'] = 'uploads'
 
 app.config.update(
@@ -27,10 +29,10 @@ app.config.update(
 googlelogin = GoogleLogin(app)
 
 users = {}
-#url build so that the user comes first then build off ie mhardy2/course/assignments
 
-#user class for each user session 
+#User Class used for the GOOGLE Authentication part of application
 class User(UserMixin):
+    '''user class for each user session '''
     def __init__(self, userinfo):
         self.id = userinfo['id']
         self.name = userinfo['name']
@@ -38,16 +40,18 @@ class User(UserMixin):
         self.email = userinfo.get('email')
 
 
+#grabs user informaton from google 
 @googlelogin.user_loader
 def get_user(userid):
+    '''Returns a userid'''
     return users.get(userid)
 
-  
-   
-#connects to google auth -- third party login 
+
+#google authentication callback uses keys and google api cloud information to login with google 
 @app.route('/oauth2callback')
 @googlelogin.oauth2callback
 def login(token, userinfo, **params):
+    '''connects to google auth -- third party login '''
     user = users[userinfo['id']] = User(userinfo)
     login_user(user)
     #uses google token and extra info in session 
@@ -63,26 +67,41 @@ def login(token, userinfo, **params):
         return redirect(params.get('next', url_for('newUser')))
         
 
-#allows user to logout for testing purpose --> more sophisticated logout will be created    
+#allows user to logout and will redirect to homepage
 @app.route('/logout')
 def logout():
     logout_user()
     session.clear()
-    return """
-        <p>Logged out</p>
-        <p><a href="/">Return to /</a></p>
-        """
+    return index()
 
-#shows index page and allows people to login
+#index page will only be displayed if a user is logged in 
 @app.route('/')
 def index():
-    googleUrl =  googlelogin.login_url(approval_prompt='force')
-    return render_template('base.html', url = googleUrl)
-
-
-#manual login (users were manually added)
+    '''Returns template for dashboard if user is logged in'''
+    try:
+        if session['logged_in']:
+            return dashboard()
+    except:
+        '''Returns the template for the login page'''
+        googleUrl =  googlelogin.login_url(approval_prompt='force')
+        return render_template('base.html', url = googleUrl)
+        
+        
+        
+@app.route('/dashboard')
+def dashboard():
+    '''Returns dashboard template'''
+    if session['logged_in']:
+        return render_template('dashboard.html', name = session['name'], logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return(request.referrer)
+    
+    
+#originally only created a google login page     
 @app.route('/manualLogin', methods = ['POST'])
 def flaskLogin():
+    '''Manual login for users who are already signed up'''
     conn = queries.getConn('c9')
     check = ''
     pwrd = request.form['password']
@@ -99,6 +118,7 @@ def flaskLogin():
     session['logged_in'] =  True
     session['bnumber'] = check['bnumber']   
     session['username'] = check['username']
+    session['name'] = check['name']
     return redirect(url_for('profile', bnumber = session['bnumber']))
 
 
@@ -107,15 +127,15 @@ def flaskLogin():
 @app.route('/profile/')  
 @app.route('/profile/<bnumber>')
 def profile(bnumber = None):
+    '''Renders a user's profile and allow users to access other student's profile'''
     conn = queries.getConn('c9')
-    #checks to see if user is logged into a session, otherwise will not be able to acesss
     if session.get('logged_in'):
         if bnumber:
             
             userInfo = queries.profile(conn, bnumber)
         else:
-            #if no bnumber is given redirect to current users information 
-            #using redirect if users input URL /profile or /profile/ --> no bnumber given 
+            '''if no bnumber is given redirect to current users information
+            redirect if users input URL /profile or /profile/ --> no bnumber given '''
             return redirect(url_for('profile', bnumber = session['bnumber']))
     else:
         flash('Need to login to access page')
@@ -130,49 +150,67 @@ def profile(bnumber = None):
 #will be redirected to this url when your name is not in database
 @app.route('/newUser', methods = ['GET','POST'])
 def newUser():
-    conn = queries.getConn('c9')
-    if request.method == 'POST':
+    '''Returns a template for user sign up if the user is not found in the database'''
+    if request.method == 'GET':
+        return render_template('newUser.html')
+    else:
+        conn = queries.getConn('c9')
+        username = request.form.get('username')
+        password = request.form.get('password1')
+        password2 = request.form.get('password2')
         name = request.form.get('name')
         email = request.form.get('email')
         phone = request.form.get('phone')
         bnumber = request.form.get('bnumber')
-        if len(bnumber) == 0:
-            flash('enter a bnumber')
-        else:
-            queries.addUser(conn, bnumber, name, email, phone)
+        userType = request.form.get('userType')
+        print('queries', queries.usernameTaken(conn, username))
+        if queries.usernameTaken(conn, username):
+            flash('Username taken. Enter a new username')
+            return render_template('newUser.html')
+        if password != password2:
+            flash('Passwords do not match')
+            return render_template('newUser.html')
+        # hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        if (username and password and name and email and phone and bnumber 
+        and userType):
+            queries.addUser(conn, username, password, bnumber, name, email, phone,
+            userType)
             return redirect(url_for('profile'))
-    else:
-        name = current_user.name 
-        email = current_user.email 
-        return render_template('newUser.html', name = name, email = email)
 
-
-        
 @app.route('/courses/<courseNum>')
 @app.route('/courses')
 def courses(courseNum = None):
-    conn = queries.getConn('c9')
-    bnumber = session.get('bnumber')
-    instructor = queries.isInstructor(conn, bnumber)
-    if courseNum:
-        course = queries.findCourse(conn, courseNum)
-        roster = queries.roster(conn, courseNum)
-        session['courseNum'] = courseNum
-        
-        psets = queries.getAssignments(conn, courseNum, bnumber)
-        
-        return render_template('roster.html', course = course, courseNum = courseNum, 
-                                roster = roster, psets = psets, 
-                                logged_in = session['logged_in'], instructor = instructor)
+    '''Display courses student is in enrolled in or courses professor teaches'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        bnumber = session.get('bnumber')
+        instructor = queries.isInstructor(conn, bnumber)
+        if courseNum:
+            course = queries.findCourse(conn, courseNum)
+            roster = queries.roster(conn, courseNum)
+            session['courseNum'] = courseNum
             
+            psets = queries.getAssignments(conn, courseNum, bnumber)
+            
+            return render_template('roster.html', course = course, courseNum = courseNum, 
+                                    roster = roster, psets = psets, 
+                                    logged_in = session['logged_in'], instructor = instructor)
+                
+        else:
+            if instructor:
+                courses = queries.courses(conn, bnumber)
+            else:
+                courses = queries.coursesStudent(conn, bnumber)
+            return render_template('courses.html', courses = courses, 
+            logged_in = session['logged_in'], instructor=instructor)
     else:
-        courses = queries.courses(conn)
-        return render_template('courses.html', courses = courses, 
-        logged_in = session['logged_in'], instructor=instructor)
+        flash('Need to login to access page')
+        return (request.referrer)
 
     
 @app.route('/update', methods =['POST'])
 def update():
+    '''Updates information about current_user'''
     if session.get('logged_in'):
         conn = queries.getConn('c9')
         username = request.form.get('username')
@@ -193,14 +231,6 @@ def update():
     else:
         return redirect(request.referrer)
 
-#only works for gauth    
-@app.route('/home')
-def home():
-    return """
-        <p>Hello, %s</p>
-        <p><img src="%s" width="100" height="100"></p>
-        <p><a href="/logout">Logout</a></p>
-        """ % (current_user.name, current_user.picture)
 
 
 @app.route('/api/addexpense')
@@ -212,6 +242,10 @@ def api_addexpense():
     
 @app.route('/availabilityAjax/', methods=['GET'])
 def availabilityAjax():
+    '''Waits for changes in availability section to update in the database
+        AUTOSAVE FEATURE    
+    '''
+    
     availability = request.args.get('availability')
     bnumber = request.args.get('bnumber')
     try:
@@ -227,6 +261,10 @@ def availabilityAjax():
 
 @app.route('/algorithmAjax', methods=['GET'])
 def match():
+    
+    '''CRUX OF APPLICATION
+        Not a sophisticated algorithm but matches students in the roster
+    '''
     courseNum = request.args.get('courseNum')
     pid = request.args.get('pid')
     try:
@@ -254,49 +292,54 @@ def match():
 
 @app.route('/pic/<bnumber>')
 def pic(bnumber):
-    conn = queries.getConn('c9')
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    numrows = curs.execute('''select bnumber,filename from users inner join picfile using (bnumber)
-                    where bnumber = %s''', [bnumber])
-    if numrows == 0:
-        flash('No picture for {}'.format(bnumber))
-        return redirect(url_for('profile'))
-    row = curs.fetchone()
-    val = send_from_directory(app.config['UPLOADS'],row['filename'])
-    return val
-
-
-@app.route('/pics/')
-def pics():
-    conn = queries.getConn('c9')
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('select bnumber,filename from picfile inner join users using (bnumber)')
-    pics = curs.fetchall()
-    return render_template('all_pics.html',pics=pics)
-
+    '''URL that displays images of users from uploads folder'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        numrows = curs.execute('''select bnumber,filename from users inner join picfile using (bnumber)
+                        where bnumber = %s''', [bnumber])
+        if numrows == 0:
+            flash('No picture for {}'.format(bnumber))
+            return redirect(url_for('profile'))
+        row = curs.fetchone()
+        val = send_from_directory(app.config['UPLOADS'],row['filename'])
+        return val
+    else:
+        flash('Need to login to access page')
+        return index()
 
 @app.route('/course/<courseNum>/group/<pid>/<groupNum>', methods=['GET'])
 def group(courseNum, groupNum, pid):
-    conn = queries.getConn('c9')
-    course = queries.findCourse(conn, courseNum)
-    group = queries.psetGroup(conn, courseNum, pid, groupNum)
-
-    return render_template('groups.html', course = course,
-    groupNum = groupNum, group = group, logged_in = session['logged_in'])
+    '''Returns group page for student users'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        course = queries.findCourse(conn, courseNum)
+        group = queries.psetGroup(conn, courseNum, pid, groupNum)
+    
+        return render_template('groups.html', course = course,
+        groupNum = groupNum, group = group, logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return index()
 
 
 @app.route('/course/<courseNum>/groups/<pid>', methods=['GET'])
 def groupProf(courseNum, pid):
-    conn = queries.getConn('c9')
-    course = queries.findCourse(conn, courseNum)
-    groups = queries.groups(conn, courseNum, pid)
-    numGroups = queries.numGroup(conn, courseNum, pid)
-    return render_template('groupProf.html', course = course, courseNum = courseNum, pid = pid,
-    numGroups = numGroups['numGroups'], groups = groups, logged_in = session['logged_in'])
-    
+    '''Returns group page for users that are professors'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        course = queries.findCourse(conn, courseNum)
+        groups = queries.groups(conn, courseNum, pid)
+        numGroups = queries.numGroup(conn, courseNum, pid)
+        return render_template('groupProf.html', course = course, courseNum = courseNum, pid = pid,
+        numGroups = numGroups['numGroups'], groups = groups, logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return index()
     
 @app.route('/uploadAjax/', methods=["POST"])
 def file_upload():
+    '''Image upload that uses AJAX to upload image into picfile database'''
     try:
         bnumber = request.form.get('bnumber')
         print(bnumber)# may throw error
@@ -321,93 +364,108 @@ def file_upload():
 
 @app.route('/newAssignment', methods=['GET','POST'])
 def newAssignment():
-    if request.method == 'GET':
-        return render_template('assignment.html')
-    else:
-        psetNum = request.form.get('psetNum')
-        psetTitle = request.form.get('psetTitle')
-        dueDate = request.form.get('dueDate').encode('utf-8')
-        maxSize = request.form.get('maxSize')
-        conn = queries.getConn('c9')
-        courseNum  = session.get('courseNum')
-        print('dueDate String', dueDate)
-        if psetNum:
-            try:
-                psetNum = int(psetNum)
-            except:
-                flash('Invalid input: Please insert')
+    '''Allows professor to add a new assignment to the database'''
+    if session['logged_in']:
+        if request.method == 'GET':
+            return render_template('assignment.html')
         else:
-            flash('Missing input: Assignment Number is missing')
-        if not dueDate:
-            flash('Missing input: Assignment Duedate is missing')
-        if not psetTitle:
-            flash('Missing input: Assignment Title is missing')
-        if maxSize:
-            try:
-                maxSize = int(maxSize)
-            except:
-                flash('Invalid input: Please insert an integer')
+            psetNum = request.form.get('psetNum')
+            psetTitle = request.form.get('psetTitle')
+            dueDate = request.form.get('dueDate').encode('utf-8')
+            maxSize = request.form.get('maxSize')
+            conn = queries.getConn('c9')
+            courseNum  = session.get('courseNum')
+            print('dueDate String', dueDate)
+            if psetNum:
+                try:
+                    psetNum = int(psetNum)
+                except:
+                    flash('Invalid input: Please insert')
+            else:
+                flash('Missing input: Assignment Number is missing')
+            if not dueDate:
+                flash('Missing input: Assignment Duedate is missing')
+            if not psetTitle:
+                flash('Missing input: Assignment Title is missing')
+            if maxSize:
+                try:
+                    maxSize = int(maxSize)
+                except:
+                    flash('Invalid input: Please insert an integer')
+                    
+            print('number', psetNum)
+            print('title', psetTitle)
+            print('dueDate', dueDate)
+            print('maxSize', maxSize)
+            if psetNum and psetTitle and dueDate and isinstance(maxSize, int):
+                queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
+                return redirect(url_for('courses', courseNum = courseNum))
                 
-        print('number', psetNum)
-        print('title', psetTitle)
-        print('dueDate', dueDate)
-        print('maxSize', maxSize)
-        if psetNum and psetTitle and dueDate and isinstance(maxSize, int):
-            queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
-            return redirect(url_for('courses', courseNum = courseNum))
+            return render_template('assignment.html', logged_in = session['logged_in'])
             
-        return render_template('assignment.html')
+    else:
+        flash('Need to login to access page')
+        return index()
         
 @app.route('/update/<pid>', methods = ['GET', 'POST'])
 def deleteAssignment(pid):
-    conn = queries.getConn('c9')
-    courseNum = session.get('courseNum')
-    bnumber = session.get('bnumber')
-    instructor = queries.isInstructor(conn, bnumber)
-    if request.method == 'GET':
-        info = queries.getAssignment(conn, pid)
-        return render_template('update.html', pset = info, courseNum = courseNum)
+    '''Allows professor to deleta assignment and will update database accordingly'''
+    if session['logged_in']:
+        conn = queries.getConn('c9')
+        courseNum = session.get('courseNum')
+        bnumber = session.get('bnumber')
+        instructor = queries.isInstructor(conn, bnumber)
+        if request.method == 'GET':
+            info = queries.getAssignment(conn, pid)
+            return render_template('update.html', pset = info, courseNum = courseNum)
+        else:
+            if request.form.get('submit') == 'update':
+                newPid = request.form.get('pid')
+                psetTitle = request.form.get('psetTitle')
+                dueDate = request.form.get('dueDate')
+                maxSize = request.form.get('maxSize')
+                queries.updatePsets(conn, newPid, psetTitle, dueDate, maxSize, courseNum)
+                return redirect(url_for('courses', courseNum = courseNum, instructor = instructor))
+                
+            elif request.form.get('submit') == 'delete':
+                queries.deleteAssignment(conn, pid)
+        return redirect(url_for('courses', courseNum=courseNum, instructor=instructor))
     else:
-        if request.form.get('submit') == 'update':
-            newPid = request.form.get('pid')
-            psetTitle = request.form.get('psetTitle')
-            dueDate = request.form.get('dueDate')
-            maxSize = request.form.get('maxSize')
-            queries.updatePsets(conn, newPid, psetTitle, dueDate, maxSize, courseNum)
-            return redirect(url_for('courses', courseNum = courseNum, instructor = instructor))
-            
-        elif request.form.get('submit') == 'delete':
-            queries.deleteAssignment(conn, pid)
-    return redirect(url_for('courses', courseNum=courseNum, instructor=instructor))
+        flash('Need to login to access page')
+        return index()
 
 @app.route('/newCourse', methods=['GET', 'POST'])
 def newCourse():
-    bnumber = session.get('bnumber')
-    if request.method == 'GET':
-        return render_template('newCourse.html', bnumber = bnumber)
-    else:
-        courseNum = request.form.get('courseNum')
-        courseName = request.form.get('courseName')
-        semester = request.form.get('semester')
-        if courseNum:
-            try:
-                courseNum = int(courseNum)
-            except:
-                flash('Invalid input: Please enter integer values')
+    '''Allows professors to add new course to database and will be displayed on courses page'''
+    if session['logged_in']:
+        bnumber = session.get('bnumber')
+        if request.method == 'GET':
+            return render_template('newCourse.html', bnumber = bnumber)
         else:
-            flash('Missing input: Course Number is missing')
-            
-        if not courseName:
-            flash('Missing input: Course Title is missing')
-        if not semester:
-            flash('Missing input: Semester is missing')
-            
-        if isinstance(courseNum, int) and courseName and semester:
-            conn = queries.getConn('c9')
-            queries.addCourse(conn, courseNum, courseName, bnumber, semester)
-            return redirect(url_for('courses'))
-    return render_template('newCourse.html', bnumber = bnumber)
-        
+            courseNum = request.form.get('courseNum')
+            courseName = request.form.get('courseName')
+            semester = request.form.get('semester')
+            if courseNum:
+                try:
+                    courseNum = int(courseNum)
+                except:
+                    flash('Invalid input: Please enter integer values')
+            else:
+                flash('Missing input: Course Number is missing')
+                
+            if not courseName:
+                flash('Missing input: Course Title is missing')
+            if not semester:
+                flash('Missing input: Semester is missing')
+                
+            if isinstance(courseNum, int) and courseName and semester:
+                conn = queries.getConn('c9')
+                queries.addCourse(conn, courseNum, courseName, bnumber, semester)
+                return redirect(url_for('courses'))
+        return render_template('newCourse.html', bnumber = bnumber, logged_in = session['logged_in'])
+    else:
+        flash('Need to login to access page')
+        return index()
     
 if __name__ == '__main__':
     app.debug = True
