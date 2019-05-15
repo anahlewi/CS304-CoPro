@@ -10,20 +10,30 @@
         <h2>Roster</h2>
         <div class = "roster">
             <table>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone Number</th>
-                </tr>
-                {% for person in roster %}
-                <tr class="table-row" data-id={{person.bnumber}}>
-                    <td class="name-row"><a href="{{url_for('profile', bnumber = person.bnumber)}}">{{person.name}}</a></td>
-                    <td class="email-row">{{person.email}}</td>
-                    <td class="phone-row">{{person.phone}}</td>
-                </tr>
-                {% endfor %}
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone Number</th>
+                    </tr>
+                    {% for person in roster %}
+                        <tr class="table-row" data-id={{person.bnumber}}>
+                            <td class="name-row"><a href="{{url_for('profile', bnumber = person.bnumber)}}">{{person.name}}</a></td>
+                            <td class="email-row">{{person.email}}</td>
+                            <td class="phone-row">{{person.phone}}</td>
+                        </tr>
+                    {% endfor %}
             </table>
-                {% if instructor %}
+            
+            {% if instructor %}
+                <form enctype="multipart/form-data" action = "{{url_for('updateRosterWithUpload')}}" method = 'POST'>
+                    <tr>
+            	         <td><label for="roster-csv" accesskey="r"> Upload Roster:</label></td>
+            	         <td><input type="file" name="roster-csv" id="roster-csv"></td>
+                    </tr>
+                    <input type='submit' value='Upload Roster'>
+        	    </form>
+        	    
+        	    <br>
                 <form action="{{url_for('updateRoster')}}" method ="POST"> 
                     <input style="display:none;" name='courseNum' value ='{{course.courseNum}}'>
                     <select name="students">
@@ -33,51 +43,55 @@
                     </select>
                     <input type="submit" value="Add new student">
                 </form>
+                
             {% endif %}
+        </div>
         <div class = "assignments">    
             <h2><b>Assignments</b></h2>
             
             {% if instructor %}
-                <a href={{url_for('newAssignment')}}>Add a new assignment</a>
+                <a href={{url_for('newAssignment')}} class='button'>Add a new assignment</a>
             {% endif %}
             
-                    <table id="assignment-list">
-                        <tr>
-                                <th>Title</th>
-                                <th>Due Date</th>
-                                <th>Max Size</th>
-                                {% if instructor %}
-                                    <th>Groups</th>
-                                {% else %}
-                                    <th>Group</th>
-                                {% endif%} 
+            <table id="assignment-list">
+                <tr>
+                    <th>Title</th>
+                    <th>Due Date</th>
+                    <th>Max Size</th>
+                    {% if instructor %}
+                        <th>Groups</th>
+                    {% else %}
+                        <th>Group</th>
+                    {% endif%} 
                                 
-                        </tr>
-                        {% for pset in psets %}
-                            <tr data-pid={{pset.pid}}>
-                                {% if instructor %}
-                                    <td class="title"><a href="{{url_for('deleteAssignment', pid = pset.pid)}}">{{pset.psetTitle}}</a></td>
-                                {% else %}
-                                    <td class="title">{{pset.psetTitle}}</td>
-                                {% endif%}
-                                <td class="dueDate">{{pset.dueDate}}</td>
-                                <td class="size">{{pset.maxSize}}</td>
-                                {% if instructor %}
-                                    <td class='groups'><a href="{{url_for('groupProf' ,courseNum = courseNum, pid= pset.pid)}}">View Groups</a></td>
-                                {% else %}
-                                    <td class='group'>
-                                        <a href = "{{url_for('group', courseNum = courseNum, pid = pset.pid, groupNum = pset.groupNum)}}">{{pset.groupNum}}</a>
-                                    </td>
-                                {% endif %}
-                            </tr>
-
-                        {% endfor %}
+                </tr>
+                {% for pset in psets %}
+                    <tr data-pid={{pset.pid}}>
+                        {% if instructor %}
+                            <td class="title"><a href="{{url_for('deleteAssignment', pid = pset.pid)}}">{{pset.psetTitle}}</a></td>
+                        {% else %}
+                            <td class="title">{{pset.psetTitle}}</td>
+                        {% endif%}
+                        <td class="dueDate">{{pset.dueDate}}</td>
+                        <td class="size">{{pset.maxSize}}</td>
+                        {% if instructor %}
+                            <td class='groups'><a href="{{url_for('groupProf' ,courseNum = courseNum, pid= pset.pid)}}">View Groups</a></td>
+                        {% else %}
+                            <td class='group'>
+                                <a href = "{{url_for('group', courseNum = courseNum, pid = pset.pid, groupNum = pset.groupNum)}}">{{pset.groupNum}}</a>
+                            </td>
+                        {% endif %}
+                    </tr>
+    
+                {% endfor %}
                         
                         
-                    </table>
+            </table>
+        </div> 
+        <br><br><br>
+        <div>
+            <a class = 'button' href="url_for('deleteCourse' courseNum = {{courseNum}})">Delete Course</a>
         </div>
-                    
-        </div>  
     </div>
 {%endblock%}
 

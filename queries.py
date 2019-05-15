@@ -1,13 +1,15 @@
 from __future__ import print_function
 import sys
 import MySQLdb
+import csv
 
 def getConn(db):
     '''Connects to a MySQL database using the host information'''
     conn = MySQLdb.connect(host='localhost',
                            user='ubuntu',
                            passwd='',
-                           db=db)
+                           db=db,
+                           local_infile=1)
     conn.autocommit(True)
     return conn
     
@@ -18,10 +20,10 @@ def profile(conn, bnumber):
     return curs.fetchone()
 
 
-def emailLogin(conn, email, password):
+def emailLogin(conn, email):
     '''Returns user information to process login with email/password login'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where email = %s and password = %s''',[email, password])
+    curs.execute('''select username, password, name, bnumber from users where email = %s''',[email])
     return curs.fetchone()
 
 def google_login(conn, email):
@@ -30,9 +32,9 @@ def google_login(conn, email):
     curs.execute('''select username from users where email = %s ''',[email])
     return curs.fetchone()
     
-def nameLogin(conn, username, password):
+def nameLogin(conn, username):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute('''select * from users where username = %s and password = %s''',[username, password])
+    curs.execute('''select username, password, name, bnumber from users where username = %s''',[username])
     return curs.fetchone()
     
 
@@ -197,10 +199,30 @@ def usernameTaken(conn, username):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select username from users where username = %s''', [username])
     return curs.fetchone()
+    
+def loadCSV(conn, fullpath):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''LOAD DATA LOCAL INFILE %s INTO TABLE users 
+                    FIELDS TERMINATED BY "," 
+                    LINES TERMINATED BY "\n"
+                    (username, bnumber, name, email)''', [fullpath])
+
+def enrollCSV(conn, fullpath, courseNum):
+    with open (fullpath, 'r') as fn:
+        read = csv.reader(fn, delimiter = ',')
+        curs = conn.cursor(MySQLdb.cursors.DictCursor)
+        for row in read:
+            curs.execute('''insert into enrollment(bnumber, courseNum) values (%s, %s)''', [row[1], courseNum])
+    
+    
+def deleteCourse(conn, courseNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''delete from courses where courseNum = %s''',[courseNum])
+    
 if __name__ == '__main__':
     conn = getConn('c9')
     
-    print(allStudents(conn))
+    # print(allStudents(conn))
     # print(profile(conn, 'alewi@wellesley.edu'))
     # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
     # print(roster(conn, 13587))
@@ -209,3 +231,4 @@ if __name__ == '__main__':
     # print(psetGroup(conn,13587, 1, 16 ))
     # print(numGroup(conn,13587, 1))
     # print(groups(conn,13587, 1))
+    # loadCSV(conn, 'uploads/roster.csv')

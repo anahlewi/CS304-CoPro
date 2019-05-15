@@ -150,3 +150,19 @@ table td{
   padding: 2px 16px;
 }
 
+.button{
+  background-color: white;
+  border: none;
+  color: black;
+  padding: 4px 7px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 3px;
+  cursor: pointer;
+}
+.button:hover, button:hover{
+  background-color: #368F8B;
+  color: white;
+}
