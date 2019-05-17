@@ -35,7 +35,7 @@
         	    
         	    <br>
                 <form action="{{url_for('updateRoster')}}" method ="POST"> 
-                    <input style="display:none;" name='courseNum' value ='{{course.courseNum}}'>
+                    <input id = 'courseNum' style="display:none;" name='courseNum' value ='{{course.courseNum}}'>
                     <select name="students">
                         {% for student in students %}
                         <option value="{{student.bnumber}}">{{student.name}}</option>
@@ -90,7 +90,7 @@
         </div> 
         <br><br><br>
         <div>
-            <a class = 'button' href="url_for('deleteCourse' courseNum = {{courseNum}})">Delete Course</a>
+            <a class = 'button' href="{{url_for('deleteCourse')}}">Delete Course</a>
         </div>
     </div>
 {%endblock%}

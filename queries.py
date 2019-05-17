@@ -9,7 +9,7 @@ def getConn(db):
                            user='ubuntu',
                            passwd='',
                            db=db,
-                           local_infile=1)
+                           local_infile = 1)
     conn.autocommit(True)
     return conn
     
@@ -228,6 +228,7 @@ def newPassword(conn, password):
                     [password])
     
 def deleteCourse(conn, courseNum):
+    print('courseNum', courseNum)
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''delete from courses where courseNum = %s''',[courseNum])
     

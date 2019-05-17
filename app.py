@@ -508,10 +508,12 @@ def newCourse():
         return index()
 
 @app.route('/deleteCourse')
-def deleteCourse(courseNum):
+def deleteCourse():
+    courseNum = session.get('courseNum')
     conn = queries.getConn('c9')
+    print('app, courseNum', courseNum)
     queries.deleteCourse(conn, courseNum)
-    return redirect(url_for('courses'))
+    return redirect(url_for('dashboard'))
     
 @app.route('/newEnrollment', methods = ['GET', 'POST'])
 def newEnrollment():

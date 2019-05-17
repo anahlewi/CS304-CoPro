@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang= 'en'>
     <head>
         <meta charset="utf-8"/>
         <title>{% block title %} Base {% endblock %}</title>
@@ -12,7 +12,7 @@
     <body>
         {%block navabar%}
         <ul class= "navbar">
-            <img style='margin-left: -11%;' src="{{url_for('static', filename = 'images/logo.png')}}" width="175px" height="140px">
+            <img alt = 'logo' style='margin-left: -11%;' src="{{url_for('static', filename = 'images/logo.png')}}" width="175px" height="140px">
             {% if logged_in %}
             <li style="margin-top: -20%;"class="nav_li"><a class= "" href="{{url_for('dashboard')}}">Dashboard</a></li>
             {%else%}

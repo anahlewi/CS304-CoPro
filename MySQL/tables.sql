@@ -55,9 +55,9 @@ create table if not exists psets(
 	dueDate date,
 	maxSize int,
 	courseNum int, 
-	foreign key (courseNum) references courses(courseNum),
-	primary key (pid));
--- 	-- ENGINE = InnoDB;
+	foreign key (courseNum) references courses(courseNum) on delete cascade,
+	primary key (pid))
+	ENGINE = InnoDB;
 	
 	
 create table if not exists groups(
@@ -65,23 +65,22 @@ create table if not exists groups(
 	pid int,
 	courseNum int,
 	foreign key (pid) references psets(pid),
-	foreign key (courseNum) references courses(courseNum),
-	primary key (groupNum));
-	-- ENGINE	= InnoDB;
+	foreign key (courseNum) references courses(courseNum) on delete cascade,
+	primary key (groupNum))
+	ENGINE	= InnoDB;
 
 
 create table if not exists groupForPset(
 	groupNum int,
 	bnumber varchar(9),
-	foreign key (groupNum) references groups(groupNum),
-	foreign key (bnumber) references users(bnumber)
-);
-	-- ENGINE	= InnoDB;
+	foreign key (groupNum) references groups(groupNum) on delete cascade,
+	foreign key (bnumber) references users(bnumber))
+	ENGINE	= InnoDB;
 	
 create table if not exists enrollment(
 	courseNum int,
 	bnumber varchar(9),
-	foreign key(courseNum)  references courses(courseNum),
+	foreign key(courseNum)  references courses(courseNum) on delete cascade,
 	foreign key(bnumber) references users(bnumber),
-	primary key (bnumber, courseNum));
-	-- ENGINE	= InnoDB;
+	primary key (bnumber, courseNum))
+	ENGINE	= InnoDB;
