@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %} New Enrolled User {% endblock %}
+        {% block content %}
+            <div class="enroll-user content">
+            	<h1>Set Up Account</h1>
+            	<form id="enroll-user" method="POST" action="{{url_for('newEnrollment')}}">
+	                <p><label for="username">Username:</label>
+	                <input type="text" id="username" name="username" required></p>
+	                <p><label for="courseNum">Course Number:</label>
+	                <input type="text" id="courseNum" name="courseNum" required></p>
+	                <p><input type="submit" value="Set Up Account"></p>
+            	</form>
+            </div>
+        {% endblock %}
+        

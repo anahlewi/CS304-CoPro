@@ -449,7 +449,7 @@ def newAssignment():
         
 @app.route('/update/<pid>', methods = ['GET', 'POST'])
 def deleteAssignment(pid):
-    '''Allows professor to deleta assignment and will update database accordingly'''
+    '''Allows professor to delete assignment and will update database accordingly'''
     if session.get('logged_in'):
         conn = queries.getConn('c9')
         courseNum = session.get('courseNum')
@@ -511,10 +511,36 @@ def newCourse():
 def deleteCourse(courseNum):
     conn = queries.getConn('c9')
     queries.deleteCourse(conn, courseNum)
-    return redirect("url_for('courses')")
+    return redirect(url_for('courses'))
     
-    
-    
+@app.route('/newEnrollment', methods = ['GET', 'POST'])
+def newEnrollment():
+    if request.method == 'GET':
+        return render_template('newEnrollment.html')
+    else:
+        username = request.form.get('username')
+        courseNum = request.form.get('courseNum')
+        conn = queries.getConn('c9')
+        if not queries.checkEnrollment(conn, username, courseNum):
+            flash('Your username is not enrolled in this course. ' 
+            +
+            'Confirm your course number or sign up for a new account')
+            return redirect(request.referrer)
+        return render_template('newPassword.html', username = username)
+
+@app.route('/newPassword', methods = ['POST'])
+def newPassword():
+    username = request.form.get('username')
+    password1 = request.form.get('password')
+    password2 = request.form.get('password2')
+    if password1 != password2:
+        flash('Passwords do not match')
+        return render_template('newPassword.html', usernmame  = username)
+    hashed = bcrypt.hashpw(password1.encode('utf-8'), bcrypt.gensalt())
+    conn = queries.getConn('c9')
+    queries.newPassword(conn, hashed)
+    flash('Your account has been created! Go ahead and login.')
+    return render_template('base.html')
 if __name__ == '__main__':
     app.debug = True
     app.run('0.0.0.0',8082)

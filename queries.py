@@ -213,7 +213,19 @@ def enrollCSV(conn, fullpath, courseNum):
         curs = conn.cursor(MySQLdb.cursors.DictCursor)
         for row in read:
             curs.execute('''insert into enrollment(bnumber, courseNum) values (%s, %s)''', [row[1], courseNum])
+
+
+def checkEnrollment(conn, username, courseNum):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''select * from users inner join enrollment using (bnumber) 
+                    where username = %s and courseNum = %s''', 
+                    [username, courseNum])
+    return curs.fetchone()
     
+def newPassword(conn, password):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute('''update users set password = %s''', 
+                    [password])
     
 def deleteCourse(conn, courseNum):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
