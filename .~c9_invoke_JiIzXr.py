@@ -4,18 +4,21 @@ from flask import (Flask, url_for, redirect, session, render_template, request, 
 from werkzeug import secure_filename
 import random, math
 import matching
-import datetime
+from datetime import datetime
 from flask_login import (UserMixin, login_required, login_user, logout_user, current_user)
 from flask_googlelogin import GoogleLogin
 import bcrypt
+from flask_socketio import SocketIO
+
+
 
 app = Flask(__name__)
+socketio = SocketIO(app)
 import sys, os, random
 import imghdr
 import MySQLdb
 
 
-app.config['SECRET_KEY'] = 'ayyyy'
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 app.config['UPLOADS'] = 'uploads'
 
@@ -29,8 +32,6 @@ app.config.update(
 googlelogin = GoogleLogin(app)
 
 users = {}
-socketio = SocketIO(app)
-
 
 #User Class used for the GOOGLE Authentication part of application
 class User(UserMixin):
@@ -480,8 +481,23 @@ def newCourse():
         return render_template('newCourse.html', bnumber = bnumber, logged_in = session['logged_in'])
     else:
         flash('Need to login to access page')
-        return index()
+@app.route('/session')
 
+@app.route('/session')
+def sessions():
+    return render_template('session.html')
+
+
+def messageReceived(methods=['GET', 'POST']):
+    print('message was received!!!')
+
+
+@socketio.on('my event')
+def handle_my_custom_event(json, methods=['GET', 'POST']):
+    print('received my event: ' + str(json))
+    socketio.emit('my response', json, callback=messageReceived)
+    
 if __name__ == '__main__':
+    socketio.run(app, debug=True)
     app.debug = True
-    app.run('0.0.0.0',8081)
+    app.run('0.0.0.0',8082)

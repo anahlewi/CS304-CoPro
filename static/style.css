@@ -36,14 +36,10 @@ input{
 }
 
 #profile-img{
-    /*width: 200px;*/
-    /*border-radius: 50%;*/
-    /*display: block;*/
-    /*margin: auto;*/
-    border-radius: 50%;
-    height: auto;
-    display: block;
     width: 100%;
+    border-radius: 50%;
+    height: 100%;
+    display: block;
 }
 #user-profile-heading{
   text-align: center;
@@ -74,8 +70,16 @@ table td{
 }
 .container-img{
    width: 200px;
+   height: 200px;
    display: block;
    margin: auto;
+}
+
+tr.chat-name{
+  font-size: 25px;
+}
+tr.chat-name:hover{
+  background:lightgrey;
 }
 
 /* The overlay effect (full height and width) - lays on top of the container and over the image */

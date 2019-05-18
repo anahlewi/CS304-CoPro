@@ -3,9 +3,12 @@
     <head>
         <meta charset="utf-8"/>
         <title>{% block title %} Base {% endblock %}</title>
+        <link rel="icon" 
+          type="image/png" 
+          href="{{ url_for('static', filename = 'images/logo.png') }}">
         <link type="text/css"
           rel="stylesheet"
-          href="{{ url_for('static', filename = 'style.css') }}">
+          href="{{ url_for('static', filename = 'style.css') }}" sizes="32x32">
           {% block head %}
           {% endblock %}
     </head>
@@ -45,6 +48,7 @@
                 <h1 style="text-align:center;">CoPro</h1>
                 <form method="POST" action="{{url_for('flaskLogin')}}">
                   <input type="text" id="login" name="username-email" placeholder="login">
+                  <br>
                   <input type="password" id="password" name="password" placeholder="password">
                   <input type="submit"value="Log In">
     

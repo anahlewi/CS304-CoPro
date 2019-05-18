@@ -7,7 +7,7 @@
         <p>Semester: {{course.semester}}</p>
         <p>Instructor: {{course.instructor}}</p>
         <div class = "groups">    
-            <h2><b>Groups ( {{numGroups}} )</b></h2>
+            <h2 id = "numGroups">Groups ( {{numGroups}} )</h2>
                     <table id="groups-list">
                         <tr>
                                 <th>Group Num</th>
@@ -31,6 +31,10 @@
         console.log( {{courseNum}} );
         $.get(URL,{'courseNum': {{courseNum}}, 'pid': {{pid}} }, function(data){
             console.log(data);
+            $("#numGroups").text('Groups( '+ data.groupNum.length + ' )')
+            for (i = 0; i < data.groupNum.length; i++) { 
+                $('#groups-list').append("<tr data-pid='"+ data.groupNum + "'> <td class = 'group-num'>" + data.groupNum[i] + "</td></tr>");
+            }
         });
     });
 </script>

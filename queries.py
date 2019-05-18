@@ -179,6 +179,30 @@ def psetGroup(conn, courseNum, pid, groupNum):
     where G.courseNum = %s and G.pid = %s and G.groupNum = %s''', 
     [courseNum, pid, groupNum])
     return curs.fetchall()
+
+def chatExists(conn, recip1, recip2):
+    '''Returns all the groups form for all psets'''
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select roomkey from chatHistory
+    where (sender = %s and recipient = %s) or 
+    (sender = %s and recipient = %s) ''', [recip1, recip2, recip2, recip1])
+    return curs.fetchone()
+    
+def findChat(conn, bnumber):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select U.name, C.recipient from chatHistory C
+    inner join users as U 
+    on C.recipient = U.bnumber
+    where C.sender = %s ''', [bnumber])
+    return curs.fetchall()
+    
+def allChats(conn, bnumber):
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
+    curs.execute(''' select U.name, C.recipient, C.sender, C.message from chatHistory C
+    inner join users as U 
+    on C.sender = U.bnumber
+    where C.recipient = %s ''', [bnumber])
+    return curs.fetchall()
     
 def allGroups(conn):
     '''Returns all the groups form for all psets'''
@@ -197,15 +221,7 @@ def usernameTaken(conn, username):
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select username from users where username = %s''', [username])
     return curs.fetchone()
+    
 if __name__ == '__main__':
     conn = getConn('c9')
-    
-    print(allStudents(conn))
-    # print(profile(conn, 'alewi@wellesley.edu'))
-    # print(update(conn, "Anah Lewi", 'alewi@wellesley.edu', '3476832433','STONE', 'Monday Morning 8-12'))
-    # print(roster(conn, 13587))
-    # print(isInstructor(conn, 'B20800497'))
-    
-    # print(psetGroup(conn,13587, 1, 16 ))
-    # print(numGroup(conn,13587, 1))
-    # print(groups(conn,13587, 1))
+    print(chatExists(conn,'B20814256','B20800000')) 
