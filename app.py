@@ -415,28 +415,14 @@ def newAssignment():
             maxSize = request.form.get('maxSize')
             conn = queries.getConn('c9')
             courseNum  = session.get('courseNum')
-            print('dueDate String', dueDate)
-            if psetNum:
-                try:
-                    psetNum = int(psetNum)
-                except:
-                    flash('Invalid input: Please insert')
-            else:
-                flash('Missing input: Assignment Number is missing')
-            if not dueDate:
-                flash('Missing input: Assignment Duedate is missing')
-            if not psetTitle:
-                flash('Missing input: Assignment Title is missing')
-            if maxSize:
-                try:
-                    maxSize = int(maxSize)
-                except:
-                    flash('Invalid input: Please insert an integer')
-                    
-            print('number', psetNum)
-            print('title', psetTitle)
-            print('dueDate', dueDate)
-            print('maxSize', maxSize)
+            try:
+                psetNum = int(psetNum)
+            except:
+                flash('Invalid input: Please insert an integer value for Assignment Number')
+            try:
+                maxSize = int(maxSize)
+            except:
+                flash('Invalid input: Please insert an integer for Max Group Size')
             if psetNum and psetTitle and dueDate and isinstance(maxSize, int):
                 queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
                 return redirect(url_for('courses', courseNum = courseNum))
@@ -485,18 +471,10 @@ def newCourse():
             courseNum = request.form.get('courseNum')
             courseName = request.form.get('courseName')
             semester = request.form.get('semester')
-            if courseNum:
-                try:
-                    courseNum = int(courseNum)
-                except:
-                    flash('Invalid input: Please enter integer values')
-            else:
-                flash('Missing input: Course Number is missing')
-                
-            if not courseName:
-                flash('Missing input: Course Title is missing')
-            if not semester:
-                flash('Missing input: Semester is missing')
+            try:
+                courseNum = int(courseNum)
+            except:
+                flash('Invalid input: Please enter integer values')
                 
             if isinstance(courseNum, int) and courseName and semester:
                 conn = queries.getConn('c9')

@@ -201,6 +201,7 @@ def usernameTaken(conn, username):
     return curs.fetchone()
     
 def loadCSV(conn, fullpath):
+    '''Load csv users data into the users table'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''LOAD DATA LOCAL INFILE %s INTO TABLE users 
                     FIELDS TERMINATED BY "," 
@@ -208,6 +209,7 @@ def loadCSV(conn, fullpath):
                     (username, bnumber, name, email)''', [fullpath])
 
 def enrollCSV(conn, fullpath, courseNum):
+    '''Uses a CSV file to enroll students in a course'''
     with open (fullpath, 'r') as fn:
         read = csv.reader(fn, delimiter = ',')
         curs = conn.cursor(MySQLdb.cursors.DictCursor)
@@ -216,6 +218,7 @@ def enrollCSV(conn, fullpath, courseNum):
 
 
 def checkEnrollment(conn, username, courseNum):
+    '''Checks if a username is enrolled in a course'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''select * from users inner join enrollment using (bnumber) 
                     where username = %s and courseNum = %s''', 
@@ -223,12 +226,13 @@ def checkEnrollment(conn, username, courseNum):
     return curs.fetchone()
     
 def newPassword(conn, password):
+    '''Updates an enrolled users password for account login'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''update users set password = %s''', 
                     [password])
     
 def deleteCourse(conn, courseNum):
-    print('courseNum', courseNum)
+    '''Deletes a course from the database and all related assignments'''
     curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''delete from courses where courseNum = %s''',[courseNum])
     
