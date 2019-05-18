@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang= 'en'>
     <head>
         <meta charset="utf-8"/>
         <title>{% block title %} Base {% endblock %}</title>
@@ -15,7 +15,7 @@
     <body>
         {%block navabar%}
         <ul class= "navbar">
-            <img style='margin-left: -11%;' src="{{url_for('static', filename = 'images/logo.png')}}" width="175px" height="140px">
+            <img alt = 'logo' style='margin-left: -11%;' src="{{url_for('static', filename = 'images/logo.png')}}" width="175px" height="140px">
             {% if logged_in %}
             <li style="margin-top: -20%;"class="nav_li"><a class= "" href="{{url_for('dashboard')}}">Dashboard</a></li>
             {%else%}
@@ -50,12 +50,14 @@
                   <input type="text" id="login" name="username-email" placeholder="login">
                   <br>
                   <input type="password" id="password" name="password" placeholder="password">
-                  <input type="submit"value="Log In">
+                  <input type="submit" value="Log In" class='button'>
     
                 </form>
-                <a href="{{url_for('newUser')}}">Sign Up Here</a>
+                <a href="{{url_for('newUser')}}" class='button'>Sign Up Here</a>
                 <br>
-                 <a href="{{url}}"> Google Login</a>
+                <a href="{{url_for('newEnrollment')}}" class='button'>New User Enrolled by Instructor</a>
+                <br>
+                 <a href="{{url}}" class = 'button'> Google Login</a>
                  
              </div>
             {% endblock %}

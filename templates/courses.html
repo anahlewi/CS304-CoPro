@@ -3,20 +3,21 @@
         {% block content %}
                 <div class="courses content" id="courses-content">
                 {% block tile %}
-                {% for course in courses %}
-                    <div class="card" id={{course.courseNum}} onclick="redirect()">
-                        <div class="container" >
-                            <h4><b>{{course.courseName}}</b></h4>
-                            <p>{{course.semester}}</p>
-                            <p>{{course.instructor}}</p> 
+                    {% for course in courses %}
+                        <div class="card" id={{course.courseNum}} onclick="redirect()">
+                            <div class="container" >
+                                <h4><b>{{course.courseName}}</b></h4>
+                                <p>{{course.semester}}</p>
+                                <p>{{course.instructor}}</p> 
+                            </div>
                         </div>
+                    {% endfor %}
+                    <div>
+                        {% if instructor %}
+                            <a href = "{{url_for('newCourse', bnumber = bnumber)}}" class='button'>Add a new course</a>
+                        {% endif %}
                     </div>
-                {% endfor %}
-                <div>
-                    {% if instructor %}
-                        <a href = "{{url_for('newCourse', bnumber = bnumber)}}">Add a new course</a>
-                    {% endif %}
-                </div>
+                    <br>
                 {% endblock %}
                 </div>
         {% endblock %}
@@ -33,4 +34,3 @@
         }
     </script>
     {%endblock%}
-</html>

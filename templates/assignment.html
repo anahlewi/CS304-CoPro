@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Assignments {% endblock %}
+{% block title %} New Assignment {% endblock %}
 {% block content %}
         <div class=" content">
         	<form method=POST action="{{url_for('newAssignment')}}">
@@ -9,13 +9,13 @@
                 <legend>Assignment Information</legend> <!--a caption to the fieldsete-->
                 <table>
                 <tr><td><label for="psetNum" accesskey="n">(1) Assignment Number:</label></td> <!--td is like a cell in the table; note that for matches the id of the next element; access key is a shortcut to an element-->
-                    <td><input type="text" name="psetNum" id="psetNum"></td></tr>
+                    <td><input type="text" name="psetNum" id="psetNum" required></td></tr>
                 <tr><td><label for="psetTitle" accesskey="t">(2) Assignment Title:</label></td>
-                    <td><input type="text" name="psetTitle" id="psetTitle"></td></tr>
+                    <td><input type="text" name="psetTitle" id="psetTitle" required></td></tr>
                 <tr><td><label for="dueDate" accesskey="d">(3) Due Date:</label></td>
-                    <td><input type="date" name="dueDate" id="dueDate"></td></tr>
+                    <td><input type="date" name="dueDate" id="dueDate" required></td></tr>
                 <tr><td><label for="maxSize" accesskey="s">(4) Max Group Size:</label></td>
-                    <td><input type="number" name="maxSize" id="maxSize"></td></tr>
+                    <td><input type="number" name="maxSize" id="maxSize" required></td></tr>
                
                 </table>
                 </fieldset>

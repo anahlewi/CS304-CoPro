@@ -75,13 +75,6 @@ table td{
    margin: auto;
 }
 
-tr.chat-name{
-  font-size: 25px;
-}
-tr.chat-name:hover{
-  background:lightgrey;
-}
-
 /* The overlay effect (full height and width) - lays on top of the container and over the image */
 .overlay {
     position: absolute;
@@ -154,3 +147,19 @@ tr.chat-name:hover{
   padding: 2px 16px;
 }
 
+.button{
+  background-color: white;
+  border: none;
+  color: black;
+  padding: 4px 7px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 3px;
+  cursor: pointer;
+}
+.button:hover, button:hover{
+  background-color: #368F8B;
+  color: white;
+}

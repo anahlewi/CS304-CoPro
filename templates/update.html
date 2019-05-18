@@ -18,23 +18,23 @@
                   <table>
                         <tr>
                           <td><label for="pid">Assignment Number</label></td>
-                          <td><input name='pid' value='{{pset.pid}}'></td> 
+                          <td><input id = 'pid' name='pid' value='{{pset.pid}}' required></td> 
                         </tr>
                         <tr>
                           <td><label for="psetTitle">Assignment Title</label></td>
-                          <td><input name='psetTitle' value='{{pset.psetTitle}}'></td>
+                          <td><input id = 'psetTitle' name='psetTitle' value='{{pset.psetTitle}}' required></td>
                         </tr>
                         <tr>
                           <td><label for="dueDate">Due Date</label></td>
-                          <td><input name='dueDate' value='{{pset.dueDate}}'></td>
+                          <td><input id= 'dueDate' name='dueDate' value='{{pset.dueDate}}' required></td>
                         </tr>
                         <tr>
                           <td><label for="maxSize">Max Group Size</label></td>
-                          <td><input name='maxSize' value='{{pset.maxSize}}'></td>
+                          <td><input id = 'maxSize' name='maxSize' value='{{pset.maxSize}}' required></td>
                         </tr>
                         <tr>
                           <td><label for="courseNum">Course Number</label></td>
-                          <td><input name='courseNum' value='{{courseNum}}' disabled></td>
+                          <td><input id = 'courseNum' name='courseNum' value='{{courseNum}}' disabled></td>
                         </tr>
                   </table>
                   <input type="submit" name="submit" value="update">

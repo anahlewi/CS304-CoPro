@@ -14,6 +14,8 @@ import sys, os, random
 import imghdr
 import MySQLdb
 
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'csv'])
+
 
 app.config['SECRET_KEY'] = 'ayyyy'
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
@@ -110,18 +112,23 @@ def flaskLogin():
     print(pwrd)
     if '@' in request.form['username-email']:
         email = request.form['username-email']
-        check = queries.emailLogin(conn, email, pwrd) 
+        check = queries.emailLogin(conn, email) 
     else:
         username =  request.form['username-email']
-        check = queries.nameLogin(conn, username, pwrd)
+        check = queries.nameLogin(conn, username)
     if not check:
-       flash('Incorrect username or password')
+       flash('Username/email is not found in the database. Create an account to continue.')
        return redirect(request.referrer)
-    session['logged_in'] =  True
-    session['bnumber'] = check['bnumber']   
-    session['username'] = check['username']
-    session['name'] = check['name']
-    return redirect(url_for('profile', bnumber = session['bnumber']))
+    else:
+        hashed = check['password']
+        if bcrypt.hashpw(pwrd.encode('utf-8'), hashed.encode('utf-8')) != hashed:
+            flash('Incorrect password')
+            return redirect(request.referrer)
+        session['logged_in'] =  True
+        session['bnumber'] = check['bnumber']   
+        session['username'] = check['username']
+        session['name'] = check['name']
+        return redirect(url_for('profile', bnumber = session['bnumber']))
 
 
 #Profile page allows user to access their information and other students information
@@ -172,12 +179,13 @@ def newUser():
         if password != password2:
             flash('Passwords do not match')
             return render_template('newUser.html')
-        # hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        if (username and password and name and email and phone and bnumber 
+        hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        if (username and hashed and name and email and phone and bnumber 
         and userType):
-            queries.addUser(conn, username, password, bnumber, name, email, phone,
+            queries.addUser(conn, username, hashed, bnumber, name, email, phone,
             userType)
-            return redirect(url_for('profile'))
+            flash('Your account has been created. You can go ahead and login!')
+            return redirect(url_for('index'))
 
 @app.route('/courses/<courseNum>')
 @app.route('/courses')
@@ -212,13 +220,33 @@ def courses(courseNum = None):
 @app.route('/updateRoster', methods=['POST'])
 def updateRoster():
     conn = queries.getConn('c9')
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    
     bnumber = request.form.get('students')
-    courseNum = request.form.get('courseNum')
+    courseNum = session.get('courseNum')
+    # courseNum = request.form.get('courseNum') # not necessary
+    curs = conn.cursor(MySQLdb.cursors.DictCursor)
     curs.execute('''insert into enrollment(bnumber, courseNum)
                 values(%s, %s)''',[bnumber, courseNum])
     return redirect(request.referrer)
+
+
+@app.route('/rosterUpload', methods=['POST'])
+def updateRosterWithUpload():
+    file = request.files['roster-csv']
+    if not file.filename:
+        flash('No file selected')
+        return request.referrer
+    filename = secure_filename(file.filename)
+    if filename.split('.')[-1] in ALLOWED_EXTENSIONS:
+        fullpath = os.path.join(app.config['UPLOADS'], filename)
+        file.save(os.path.join(app.config['UPLOADS'], filename))
+        conn = queries.getConn('c9')
+        queries.loadCSV(conn, fullpath)
+        courseNum = session.get('courseNum')
+        queries.enrollCSV(conn, fullpath, courseNum)
+        return redirect(request.referrer)
+    else:
+        flash('The provided file extension is not allowed for uploads.')
+    return None
     
 @app.route('/update', methods =['POST'])
 def update():
@@ -390,28 +418,14 @@ def newAssignment():
             maxSize = request.form.get('maxSize')
             conn = queries.getConn('c9')
             courseNum  = session.get('courseNum')
-            print('dueDate String', dueDate)
-            if psetNum:
-                try:
-                    psetNum = int(psetNum)
-                except:
-                    flash('Invalid input: Please insert')
-            else:
-                flash('Missing input: Assignment Number is missing')
-            if not dueDate:
-                flash('Missing input: Assignment Duedate is missing')
-            if not psetTitle:
-                flash('Missing input: Assignment Title is missing')
-            if maxSize:
-                try:
-                    maxSize = int(maxSize)
-                except:
-                    flash('Invalid input: Please insert an integer')
-                    
-            print('number', psetNum)
-            print('title', psetTitle)
-            print('dueDate', dueDate)
-            print('maxSize', maxSize)
+            try:
+                psetNum = int(psetNum)
+            except:
+                flash('Invalid input: Please insert an integer value for Assignment Number')
+            try:
+                maxSize = int(maxSize)
+            except:
+                flash('Invalid input: Please insert an integer for Max Group Size')
             if psetNum and psetTitle and dueDate and isinstance(maxSize, int):
                 queries.addAssignment(conn, psetNum, psetTitle, dueDate, maxSize, courseNum)
                 return redirect(url_for('courses', courseNum = courseNum))
@@ -424,7 +438,7 @@ def newAssignment():
         
 @app.route('/update/<pid>', methods = ['GET', 'POST'])
 def deleteAssignment(pid):
-    '''Allows professor to deleta assignment and will update database accordingly'''
+    '''Allows professor to delete assignment and will update database accordingly'''
     if session.get('logged_in'):
         conn = queries.getConn('c9')
         courseNum = session.get('courseNum')
@@ -460,18 +474,10 @@ def newCourse():
             courseNum = request.form.get('courseNum')
             courseName = request.form.get('courseName')
             semester = request.form.get('semester')
-            if courseNum:
-                try:
-                    courseNum = int(courseNum)
-                except:
-                    flash('Invalid input: Please enter integer values')
-            else:
-                flash('Missing input: Course Number is missing')
-                
-            if not courseName:
-                flash('Missing input: Course Title is missing')
-            if not semester:
-                flash('Missing input: Semester is missing')
+            try:
+                courseNum = int(courseNum)
+            except:
+                flash('Invalid input: Please enter integer values')
                 
             if isinstance(courseNum, int) and courseName and semester:
                 conn = queries.getConn('c9')
@@ -481,6 +487,43 @@ def newCourse():
     else:
         flash('Need to login to access page')
         return index()
+
+@app.route('/deleteCourse')
+def deleteCourse():
+    courseNum = session.get('courseNum')
+    conn = queries.getConn('c9')
+    print('app, courseNum', courseNum)
+    queries.deleteCourse(conn, courseNum)
+    return redirect(url_for('dashboard'))
+    
+@app.route('/newEnrollment', methods = ['GET', 'POST'])
+def newEnrollment():
+    if request.method == 'GET':
+        return render_template('newEnrollment.html')
+    else:
+        username = request.form.get('username')
+        courseNum = request.form.get('courseNum')
+        conn = queries.getConn('c9')
+        if not queries.checkEnrollment(conn, username, courseNum):
+            flash('Your username is not enrolled in this course. ' 
+            +
+            'Confirm your course number or sign up for a new account')
+            return redirect(request.referrer)
+        return render_template('newPassword.html', username = username)
+
+@app.route('/newPassword', methods = ['POST'])
+def newPassword():
+    username = request.form.get('username')
+    password1 = request.form.get('password')
+    password2 = request.form.get('password2')
+    if password1 != password2:
+        flash('Passwords do not match')
+        return render_template('newPassword.html', usernmame  = username)
+    hashed = bcrypt.hashpw(password1.encode('utf-8'), bcrypt.gensalt())
+    conn = queries.getConn('c9')
+    queries.newPassword(conn, hashed)
+    flash('Your account has been created! Go ahead and login.')
+    return render_template('base.html')
 
 if __name__ == '__main__':
     app.debug = True

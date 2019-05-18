@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>{% block title %} Update {% endblock %}</title>
+        <title>{% block title %} New Course {% endblock %}</title>
          <link type="text/css"
           rel="stylesheet"
           href="{{ url_for('static', filename = 'style.css') }}">
@@ -17,13 +17,13 @@
                     <legend>Assignment Information</legend> <!--a caption to the fieldsete-->
                     <table>
                     <tr><td><label for="courseNum" accesskey="n">(1) Course Number:</label></td> <!--td is like a cell in the table; note that for matches the id of the next element; access key is a shortcut to an element-->
-                        <td><input type="number" name="courseNum" id="courseNum"></td></tr>
+                        <td><input type="number" name="courseNum" id="courseNum" required></td></tr>
                     <tr><td><label for="courseName" accesskey="t">(2) Course Title:</label></td>
-                        <td><input type="text" name="courseName" id="courseName"></td></tr>
+                        <td><input type="text" name="courseName" id="courseName" required></td></tr>
                     <tr><td><label for="instructor" accesskey="i">(3) Instructor BNumber:</label></td>
                         <td><input type="text" name="instructor" id="instructor" value = '{{bnumber}}' disabled></td></tr>
                     <tr><td><label for="semester" accesskey="s">(4) Semester (i.e FA-2019):</label></td>
-                        <td><input type="text" name="semester" id="semester"></td></tr>
+                        <td><input type="text" name="semester" id="semester" required></td></tr>
                     </table>
                     </fieldset>
                 

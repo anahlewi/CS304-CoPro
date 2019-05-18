@@ -1,166 +1,161 @@
 {% extends "base.html" %}
 {% block title %} {{user.name}} {% endblock %}
-{% block head %}
-{%endblock%}
-
-
-        {% block content %}
+    {% block content %}
         <div class="content">
-                <!-- Display info about the user show reshall and avail if student -->
-                <h1 id="user-profile-heading">{{user.name}}</h1>
-                 <div class="container-img">
-                  <img id="profile-img" src="{{ url_for('pic', bnumber= user.bnumber) }}">
-                </div>
-                <!--Here when button clicked show form for editing details -->
-                <table id = "user-profile-table">
-                    <tr>
-                        <th>Username</th>
-                        <td style="border-top:none;">{{user.username}}</td>
-                    </tr>
-                    <tr>
-                        <th>Email</th>
-                        <td>{{user.email}}</td>
-                    </tr>
-                    <tr>
-                        <th>Residence</th>
-                        <td>{{user.resHall}}</td>
-                    </tr>
-                    <tr>
-                        <th>Bnumber</th>
-                        <td>{{user.bnumber}}</td>
-                    </tr>
-                    <tr>
-                        <th>Phone</th>
-                        <td>{{user.phone}}</td>
-                    </tr>
-                    <tr>
-                        <th>Availability</th>
-                        <td>{{user.availability}}</td>
-                    </tr>
-                </table>
-                {%if currentUser %} 
-                    <button id="edit-form-btn">Edit Profile</button>
-                {%else%}
-                    <button id="connect">Connect</button>
-                {% endif %}
-
-                <form id="edit-profile-form" method="POST" style="display:none;" enctype="multipart/form-data"  action="{{url_for('update')}}">
-                    <label>Upload New Image:<input type="file" name="pic"></label>
-                    <button id="upload-btn">Upload New Image</button>
-                    <p>
-                        <label for="edit-username">Username:</label>
-                        <input type="text" id="new-username" name="username" value="{{user.username}}">
-                        <label for="edit-email">Email:</label>
-                        <input type="text" id="new-email" name="email" value ="{{user.email}}">
-                    </p>
-                    <p>
-                        <label for="edit-bnumber">BNUMBER:</label>
-                        <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}">
-                        <label for="edit-phone">Phone Number:</label>
-                        <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
-                    </p>
-                    <p>
-                        <label for="edit-residence">Residence:</label>
-                        <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
-                        <label for="edit-avail">Availability:</label>
-                          <input list="availability" name="availability" id="check" value={{user.availability}}>
-                              <datalist id="availability">
-                                <option value="Monday Morning 8-12">
-                                <option value='Monday Afternoon 12-5'>
-                                <option value='Monday Night 7-11'>
-                                <option value='Tuesday Morning 8-12'>
-                                <option value="Tuesday Afternoon 12-5">
-                                <option value="Tuesday Night 7-11">
-                                <option value="Wednesday Morning 8-12">
-                                <option value="Wednesday Afternoon 12-5">
-                                <option value="Wednesday Night 7-11">
-                                <option value="Thursday Morning 8-12">
-                                <option value="Thursday Afternoon 12-5">
-                                <option value="Thursday Night 7-9">
-                                <option value="Friday Morning 8-12">
-                                <option value="Friday Afternoon 12-5">
-                                <option value="Friday Night 7-9">
-                                <option value="Saturday Morning 8-12">
-                                <option value="Saturday Afternoon 12-5">
-                                <option value="Saturday Night 7-9">
-                                <option value="Sunday Morning 8-12">
-                                <option value="Sunday Afternoon 12-5">
-                                <option value="Sunday Night 7-9">
-                              </datalist>
-                              
-    
-                        <!--<input type="text" id="new-avail" name="avail" value={{user.availability}}> -->
-                    </p>
-            
-                    <input type="submit" name="submit" value="Save Changes">
-                    
-                  
-                </form>
+            <!-- Display info about the user show reshall and avail if student -->
+            <h1 id="user-profile-heading">{{user.name}}</h1>
+            <div class="container-img">
+                <img alt = 'profile-img' id="profile-img" src="{{ url_for('pic', bnumber= user.bnumber) }}">
             </div>
+            <!--Here when button clicked show form for editing details -->
+            <table id = "user-profile-table">
+                <tr>
+                    <th>Username</th>
+                    <td style="border-top:none;">{{user.username}}</td>
+                </tr>
+                <tr>
+                    <th>Email</th>
+                    <td>{{user.email}}</td>
+                </tr>
+                <tr>
+                    <th>Residence</th>
+                    <td>{{user.resHall}}</td>
+                </tr>
+                <tr>
+                    <th>Bnumber</th>
+                    <td>{{user.bnumber}}</td>
+                </tr>
+                <tr>
+                    <th>Phone</th>
+                    <td>{{user.phone}}</td>
+                </tr>
+                <tr>
+                    <th>Availability</th>
+                    <td>{{user.availability}}</td>
+                </tr>
+            </table>
             
-            
-             
-        {% endblock %}
+            {%if currentUser %} 
+                <button id="edit-form-btn">Edit Profile</button>
+            {%else%}
+                <button id="connect">Connect</button>
+            {% endif %}
+
+            <form id="edit-profile-form" method="POST" style="display:none;" enctype="multipart/form-data"  action="{{url_for('update')}}">
+                <label>Upload New Image:<input type="file" name="pic"></label>
+                <button id="upload-btn">Upload New Image</button>
+                <p>
+                    <label for="new-username">Username:</label>
+                    <input type="text" id="new-username" name="username" value="{{user.username}}">
+                    <label for="new-email">Email:</label>
+                    <input type="text" id="new-email" name="email" value ="{{user.email}}">
+                </p>
+                <p>
+                    <label for="new-bnumber">BNUMBER:</label>
+                    <input type="text" id="new-bnumber" name="bnumber" value="{{user.bnumber}}">
+                    <label for="new-phone">Phone Number:</label>
+                    <input type="text" id="new-phone" name="phone" value="{{user.phone}}">
+                </p>
+                <p>
+                    <label for="new-residence">Residence:</label>
+                    <input type="text" id="new-residence" name="residence" value={{user.resHall}}>
+                    <label for="check">Availability:</label>
+                      <input list="availability" name="availability" id="check" value={{user.availability}}>
+                          <datalist id="availability">
+                            <option value="Monday Morning 8-12">
+                            <option value='Monday Afternoon 12-5'>
+                            <option value='Monday Night 7-11'>
+                            <option value='Tuesday Morning 8-12'>
+                            <option value="Tuesday Afternoon 12-5">
+                            <option value="Tuesday Night 7-11">
+                            <option value="Wednesday Morning 8-12">
+                            <option value="Wednesday Afternoon 12-5">
+                            <option value="Wednesday Night 7-11">
+                            <option value="Thursday Morning 8-12">
+                            <option value="Thursday Afternoon 12-5">
+                            <option value="Thursday Night 7-9">
+                            <option value="Friday Morning 8-12">
+                            <option value="Friday Afternoon 12-5">
+                            <option value="Friday Night 7-9">
+                            <option value="Saturday Morning 8-12">
+                            <option value="Saturday Afternoon 12-5">
+                            <option value="Saturday Night 7-9">
+                            <option value="Sunday Morning 8-12">
+                            <option value="Sunday Afternoon 12-5">
+                            <option value="Sunday Night 7-9">
+                          </datalist>
+                    <!--<input type="text" id="new-avail" name="avail" value={{user.availability}}> -->
+                </p>
         
-        {% block script %}
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-
-        <script>
-        var URL = "{{url_for('file_upload')}}";
-
-        /* global $ */
-            $("#edit-form-btn").on('click', function showEditForm() {
-            var x = document.getElementById("edit-profile-form");
-            if (x.style.display === "none") {
-                x.style.display = "block";
+                <input type="submit" name="submit" value="Save Changes">
                 
-                var table = document.getElementById("user-profile-table")
-                table.style.display = "none";
-                this.style.display="none";
-            } 
-            });
-            
-            $("#upload-btn").click(function(e){
-                e.preventDefault();
-                sendImg();
-            });
-            
-            $("#check").change(function(e){
-                e.preventDefault();
-                a = $(this).val();
-                console.log(a);
-                $.get('/availabilityAjax', {'availability': a, 'bnumber':$('#new-bnumber').val() }, function(data){
-                    console.log(data);
-                });
-            });
-            
-            function sendImg() {
-                console.log("Sending to the back end");
-               $.ajax({
-                      url:URL,
-                      type:'POST',
-                      data:new FormData($("#edit-profile-form")[0]),
-                      bnumber: $("#new-bnumber").val(),
-                      cache:false,
-                      processData:false,
-                      contentType:false,
-                      error:function(){
-                          console.log("upload error")
-                      },
-                      success:function(data){
-                          console.log(data);
-                          console.log("upload success");
-                          $('#profile-img').attr("src", "{{url_for('pic', bnumber=" + bnumber + ")}}");
-                      }
-                  });
+              
+            </form>
+        </div>
+        
+        
+         
+    {% endblock %}
+    
+    {% block script %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 
-            }  
-            function updateImg(obj){
-                if(obj.error) {
-                     console.log(obj.err)
-                } else {
-                    $('profile-img').attr("src","pic/"+obj.image)
-                }
+    <script>
+    var URL = "{{url_for('file_upload')}}";
+
+    /* global $ */
+        $("#edit-form-btn").on('click', function showEditForm() {
+        var x = document.getElementById("edit-profile-form");
+        if (x.style.display === "none") {
+            x.style.display = "block";
+            
+            var table = document.getElementById("user-profile-table")
+            table.style.display = "none";
+            this.style.display="none";
+        } 
+        });
+        
+        $("#upload-btn").click(function(e){
+            e.preventDefault();
+            sendImg();
+        });
+        
+        $("#check").change(function(e){
+            e.preventDefault();
+            a = $(this).val();
+            console.log(a);
+            $.get('/availabilityAjax', {'availability': a, 'bnumber':$('#new-bnumber').val() }, function(data){
+                console.log(data);
+            });
+        });
+        
+        function sendImg() {
+            console.log("Sending to the back end");
+           $.ajax({
+                  url:URL,
+                  type:'POST',
+                  data:new FormData($("#edit-profile-form")[0]),
+                  bnumber: $("#new-bnumber").val(),
+                  cache:false,
+                  processData:false,
+                  contentType:false,
+                  error:function(){
+                      console.log("upload error")
+                  },
+                  success:function(data){
+                      console.log(data);
+                      console.log("upload success");
+                      $('#profile-img').attr("src", "{{url_for('pic', bnumber=" + bnumber + ")}}");
+                  }
+              });
+
+        }  
+        function updateImg(obj){
+            if(obj.error) {
+                 console.log(obj.err)
+            } else {
+                $('profile-img').attr("src","pic/"+obj.image)
             }
-        </script>
-        {% endblock %}
+        }
+    </script>
+    {% endblock %}
