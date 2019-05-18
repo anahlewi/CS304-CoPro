@@ -90,7 +90,9 @@
         </div> 
         <br><br><br>
         <div>
-            <a class = 'button' href="{{url_for('deleteCourse')}}">Delete Course</a>
+            {% if instructor %}
+                <a class = 'button' href="{{url_for('deleteCourse')}}">Delete Course</a>
+            {% endif %}
         </div>
     </div>
 {%endblock%}

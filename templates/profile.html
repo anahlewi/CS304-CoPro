@@ -84,7 +84,6 @@
                             <option value="Sunday Afternoon 12-5">
                             <option value="Sunday Night 7-9">
                           </datalist>
-                    <!--<input type="text" id="new-avail" name="avail" value={{user.availability}}> -->
                 </p>
         
                 <input type="submit" name="submit" value="Save Changes">
@@ -103,7 +102,7 @@
     <script>
     var URL = "{{url_for('file_upload')}}";
 
-    /* global $ */
+    /* event handler that listens for click of button and will show edit form  */
         $("#edit-form-btn").on('click', function showEditForm() {
         var x = document.getElementById("edit-profile-form");
         if (x.style.display === "none") {
@@ -114,12 +113,15 @@
             this.style.display="none";
         } 
         });
-        
+          /* uses ajax to upload images  */
         $("#upload-btn").click(function(e){
             e.preventDefault();
             sendImg();
         });
         
+        
+        /* availability ajax event handler  */
+
         $("#check").change(function(e){
             e.preventDefault();
             a = $(this).val();
@@ -129,6 +131,8 @@
             });
         });
         
+        /*callback function used for upload ajax  */
+
         function sendImg() {
             console.log("Sending to the back end");
            $.ajax({

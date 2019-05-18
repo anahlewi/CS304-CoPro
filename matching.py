@@ -1,6 +1,7 @@
 import queries 
 
 def match(roster):
+    ''' Algorithm that just matches people arbitrarly from roster'''
     matches = {}
     listResHall = []
     matched = set()
@@ -17,6 +18,7 @@ def match(roster):
 
 
 def groupNum(groups):
+    ''' Every group number needs to be unique and it autoincrements in table'''
     result = []
     for group in groups:
         result.append(group['groupNum'])

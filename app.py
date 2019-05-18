@@ -17,7 +17,6 @@ import MySQLdb
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'csv'])
 
 
-app.config['SECRET_KEY'] = 'ayyyy'
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 app.config['UPLOADS'] = 'uploads'
 
@@ -30,8 +29,6 @@ app.config.update(
 
 googlelogin = GoogleLogin(app)
 
-users = {}
-socketio = SocketIO(app)
 
 
 #User Class used for the GOOGLE Authentication part of application
@@ -121,9 +118,14 @@ def flaskLogin():
        return redirect(request.referrer)
     else:
         hashed = check['password']
-        if bcrypt.hashpw(pwrd.encode('utf-8'), hashed.encode('utf-8')) != hashed:
-            flash('Incorrect password')
-            return redirect(request.referrer)
+        try:
+            if bcrypt.hashpw(pwrd.encode('utf-8'), hashed.encode('utf-8')) != hashed:
+                flash('Incorrect password')
+                return redirect(request.referrer)
+        except:
+            if pwrd != hashed:
+                flash('Incorrect password')
+                return redirect(request.referrer)
         session['logged_in'] =  True
         session['bnumber'] = check['bnumber']   
         session['username'] = check['username']
@@ -410,7 +412,7 @@ def newAssignment():
     '''Allows professor to add a new assignment to the database'''
     if session.get('logged_in'):
         if request.method == 'GET':
-            return render_template('assignment.html')
+            return render_template('assignment.html',logged_in = session['logged_in'])
         else:
             psetNum = request.form.get('psetNum')
             psetTitle = request.form.get('psetTitle')
@@ -434,7 +436,7 @@ def newAssignment():
             
     else:
         flash('Need to login to access page')
-        return index()
+        return redirect(url_for('index'))
         
 @app.route('/update/<pid>', methods = ['GET', 'POST'])
 def deleteAssignment(pid):
@@ -446,7 +448,7 @@ def deleteAssignment(pid):
         instructor = queries.isInstructor(conn, bnumber)
         if request.method == 'GET':
             info = queries.getAssignment(conn, pid)
-            return render_template('update.html', pset = info, courseNum = courseNum)
+            return render_template('update.html', pset = info, courseNum = courseNum, logged_in = session['logged_in'])
         else:
             if request.form.get('submit') == 'update':
                 newPid = request.form.get('pid')
@@ -461,15 +463,15 @@ def deleteAssignment(pid):
         return redirect(url_for('courses', courseNum=courseNum, instructor=instructor))
     else:
         flash('Need to login to access page')
-        return index()
+        return redirect(url_for('index'))
 
-@app.route('/newCourse', methods=['GET', 'POST'])
+@app.route('/newCourse/', methods=['GET', 'POST'])
 def newCourse():
     '''Allows professors to add new course to database and will be displayed on courses page'''
     if session.get('logged_in'):
         bnumber = session.get('bnumber')
         if request.method == 'GET':
-            return render_template('newCourse.html', bnumber = bnumber)
+            return render_template('newCourse.html', bnumber = bnumber, logged_in = session['logged_in'])
         else:
             courseNum = request.form.get('courseNum')
             courseName = request.form.get('courseName')
@@ -486,7 +488,7 @@ def newCourse():
         return render_template('newCourse.html', bnumber = bnumber, logged_in = session['logged_in'])
     else:
         flash('Need to login to access page')
-        return index()
+        return redirect(url_for('index'))
 
 @app.route('/deleteCourse')
 def deleteCourse():
@@ -499,7 +501,7 @@ def deleteCourse():
 @app.route('/newEnrollment', methods = ['GET', 'POST'])
 def newEnrollment():
     if request.method == 'GET':
-        return render_template('newEnrollment.html')
+        return render_template('newEnrollment.html', logged_in = session['logged_in'])
     else:
         username = request.form.get('username')
         courseNum = request.form.get('courseNum')
@@ -513,6 +515,7 @@ def newEnrollment():
 
 @app.route('/newPassword', methods = ['POST'])
 def newPassword():
+    '''Allows students to sign up for accounts if added by professor'''
     username = request.form.get('username')
     password1 = request.form.get('password')
     password2 = request.form.get('password2')

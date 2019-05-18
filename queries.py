@@ -181,30 +181,6 @@ def psetGroup(conn, courseNum, pid, groupNum):
     where G.courseNum = %s and G.pid = %s and G.groupNum = %s''', 
     [courseNum, pid, groupNum])
     return curs.fetchall()
-
-def chatExists(conn, recip1, recip2):
-    '''Returns all the groups form for all psets'''
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute(''' select roomkey from chatHistory
-    where (sender = %s and recipient = %s) or 
-    (sender = %s and recipient = %s) ''', [recip1, recip2, recip2, recip1])
-    return curs.fetchone()
-    
-def findChat(conn, bnumber):
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute(''' select U.name, C.recipient from chatHistory C
-    inner join users as U 
-    on C.recipient = U.bnumber
-    where C.sender = %s ''', [bnumber])
-    return curs.fetchall()
-    
-def allChats(conn, bnumber):
-    curs = conn.cursor(MySQLdb.cursors.DictCursor)
-    curs.execute(''' select U.name, C.recipient, C.sender, C.message from chatHistory C
-    inner join users as U 
-    on C.sender = U.bnumber
-    where C.recipient = %s ''', [bnumber])
-    return curs.fetchall()
     
 def allGroups(conn):
     '''Returns all the groups form for all psets'''
