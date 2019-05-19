@@ -174,7 +174,9 @@ def newUser():
         phone = request.form.get('phone')
         bnumber = request.form.get('bnumber')
         userType = request.form.get('userType')
-        print('queries', queries.usernameTaken(conn, username))
+        if '@' not in email:
+            flash('Please provide a correct email address')
+            return render_template('newUser.html')
         if queries.usernameTaken(conn, username):
             flash('Username taken. Enter a new username')
             return render_template('newUser.html')
@@ -187,7 +189,8 @@ def newUser():
             queries.addUser(conn, username, hashed, bnumber, name, email, phone,
             userType)
             flash('Your account has been created. You can go ahead and login!')
-            return redirect(url_for('index'))
+        return redirect(url_for('index'))
+        
 
 @app.route('/courses/<courseNum>')
 @app.route('/courses')
@@ -236,7 +239,6 @@ def updateRosterWithUpload():
     file = request.files['roster-csv']
     if not file.filename:
         flash('No file selected')
-        return request.referrer
     filename = secure_filename(file.filename)
     if filename.split('.')[-1] in ALLOWED_EXTENSIONS:
         fullpath = os.path.join(app.config['UPLOADS'], filename)
@@ -245,10 +247,10 @@ def updateRosterWithUpload():
         queries.loadCSV(conn, fullpath)
         courseNum = session.get('courseNum')
         queries.enrollCSV(conn, fullpath, courseNum)
-        return redirect(request.referrer)
+        
     else:
         flash('The provided file extension is not allowed for uploads.')
-    return None
+    return redirect(request.referrer)
     
 @app.route('/update', methods =['POST'])
 def update():
@@ -501,7 +503,7 @@ def deleteCourse():
 @app.route('/newEnrollment', methods = ['GET', 'POST'])
 def newEnrollment():
     if request.method == 'GET':
-        return render_template('newEnrollment.html', logged_in = session['logged_in'])
+        return render_template('newEnrollment.html')
     else:
         username = request.form.get('username')
         courseNum = request.form.get('courseNum')
